@@ -31,8 +31,8 @@ const specs: Spec[] = [
   ['root','pelvis',null,null], ['spine','spine','root','pelvis'], ['neck','neck','spine','spine'], ['head','head','neck','neck'],
   ['upperArmL','l-shoulder','neck','neck'], ['lowerArmL','l-elbow','upperArmL','l-shoulder'], ['handL','l-hand','lowerArmL','l-elbow'],
   ['upperArmR','r-shoulder','neck','neck'], ['lowerArmR','r-elbow','upperArmR','r-shoulder'], ['handR','r-hand','lowerArmR','r-elbow'],
-  ['upperLegL','l-knee','root','pelvis'], ['lowerLegL','l-foot','upperLegL','l-knee'], ['footL','l-foot','lowerLegL','l-foot'],
-  ['upperLegR','r-knee','root','pelvis'], ['lowerLegR','r-foot','upperLegR','r-knee'], ['footR','r-foot','lowerLegR','r-foot'],
+  ['upperLegL','l-knee','root','pelvis'], ['lowerLegL','l-ankle','upperLegL','l-knee'], ['footL','l-toe','lowerLegL','l-ankle'],
+  ['upperLegR','r-knee','root','pelvis'], ['lowerLegR','r-ankle','upperLegR','r-knee'], ['footR','r-toe','lowerLegR','r-ankle'],
 ];
 
 export function buildRigFromMap(points: Point[]): CharacterRig {
