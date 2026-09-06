@@ -12,7 +12,7 @@ export function createGridMesh(width:number,height:number,gridX=24,gridY=14,bone
  for(let gy=0;gy<=gridY;gy++)for(let gx=0;gx<=gridX;gx++){
   const x=(gx/gridX)*width,y=(gy/gridY)*height;
   const nearest=[...bones].sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y)).slice(0,4);
-  const raw=nearest.map(b=>({id:b.id,w:1/Math.max(1,Math.hypot(x-a.x,y-a.y))}));
+  const raw=nearest.map(b=>({id:b.id,w:1/Math.max(1,Math.hypot(x-b.x,y-b.y))}));
   const sum=raw.reduce((n,v)=>n+v.w,0)||1;
   const weights=Object.fromEntries(raw.map(v=>[v.id,v.w/sum]));
   vertices.push({x,y,weights});
