@@ -14,8 +14,8 @@ export function poseRig(rig:CharacterRig,poses:Record<string,BonePose>={}):Posed
     const worldRotation=parent?parent.worldRotation+local:local;
     const px=parent?parent.x:bone.x;
     const py=parent?parent.y:bone.y;
-    const x=parent?px+Math.cos(parent.worldRotation)*parent.length:bone.x;
-    const y=parent?py+Math.sin(parent.worldRotation)*parent.length:bone.y;
+    const x=parent?px+Math.cos(worldRotation)*bone.length:bone.x;
+    const y=parent?py+Math.sin(worldRotation)*bone.length:bone.y;
     const posed={...bone,px,py,x,y,rotation:local,worldRotation};
     byId.set(bone.id,posed);return posed;
   };
