@@ -5,18 +5,18 @@ export type PosedBone = RigBone & {px:number;py:number;worldRotation:number};
 
 const rad=(deg:number)=>deg*Math.PI/180;
 
+/** Resolve a rig into world-space bone segments. Pose rotations are world-space overrides. */
 export function poseRig(rig:CharacterRig,poses:Record<string,BonePose>={}):PosedBone[]{
   const byId=new Map<string,PosedBone>();
   const resolve=(bone:RigBone):PosedBone=>{
     const existing=byId.get(bone.id);if(existing)return existing;
     const parent=bone.parentId?byId.get(bone.parentId):undefined;
-    const local=poses[bone.id]?.rotation??bone.rotation;
-    const worldRotation=parent?parent.worldRotation+local:local;
+    const worldRotation=poses[bone.id]?.rotation??bone.rotation;
     const px=parent?parent.x:bone.x;
     const py=parent?parent.y:bone.y;
     const x=parent?px+Math.cos(worldRotation)*bone.length:bone.x;
     const y=parent?py+Math.sin(worldRotation)*bone.length:bone.y;
-    const posed={...bone,px,py,x,y,rotation:local,worldRotation};
+    const posed={...bone,px,py,x,y,rotation:worldRotation,worldRotation};
     byId.set(bone.id,posed);return posed;
   };
   rig.bones.forEach(resolve);
