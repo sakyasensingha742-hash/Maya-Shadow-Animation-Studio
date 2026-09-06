@@ -1,4 +1,5 @@
-import {listRecoverySnapshots,deleteRecoverySnapshot} from '../project/projectStorage';
+import './recoveryCenter.css';
+import {listRecoverySnapshots} from '../project/projectStorage';
 
 function boot(){
  if(document.querySelector('.recovery-center'))return;
@@ -10,8 +11,8 @@ function boot(){
  listRecoverySnapshots().then(items=>{
    if(!items.length){list.innerHTML='<div class="rc-empty">কোনো recovery snapshot পাওয়া যায়নি।</div>';return;}
    list.innerHTML=items.map((s,i)=>`<div class="rc-item"><div><b>${i===0?'Latest recovery':'Recovery snapshot'}</b><small>${new Date(s.createdAt).toLocaleString()} • ${s.project.name}</small></div><button data-id="${s.id}">Restore</button></div>`).join('');
-   list.querySelectorAll<HTMLButtonElement>('[data-id]').forEach(btn=>btn.addEventListener('click',async()=>{
-     const id=btn.dataset.id!;const selected=items.find(s=>s.id===id);if(!selected)return;
+   list.querySelectorAll<HTMLButtonElement>('[data-id]').forEach(btn=>btn.addEventListener('click',()=>{
+     const selected=items.find(s=>s.id===btn.dataset.id);if(!selected)return;
      window.dispatchEvent(new CustomEvent('maya-shadow:restore-project',{detail:selected.project}));root.remove();
    }));
  }).catch(()=>{list.innerHTML='<div class="rc-empty">Recovery storage এখনো প্রস্তুত নয়।</div>';});
