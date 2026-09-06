@@ -2,19 +2,22 @@ import React,{useMemo,useState} from 'react';
 import {CharacterRig} from '../rigging/rigEngine';
 import {solveTwoBoneIK} from './ikSolver';
 import {degrees,poseRig} from './bonePose';
+import {RigPoseKeyframe,interpolatePose,poseFromRig,upsertPoseKeyframe} from './poseTrack';
 import './animationControls.css';
 
 type Props={rig:CharacterRig;onStatus?:(message:string)=>void};
-type PoseMap=Record<string,{rotation:number}>;
 
 export default function RigPreview({rig,onStatus}:Props){
  const [target,setTarget]=useState({x:70,y:58});
  const [active,setActive]=useState<'L'|'R'>('L');
  const [onion,setOnion]=useState(true);
- const [poses,setPoses]=useState<PoseMap>({});
+ const [previewFrame,setPreviewFrame]=useState(1);
+ const [poseKeys,setPoseKeys]=useState<RigPoseKeyframe[]>([]);
+ const [poses,setPoses]=useState<Record<string,{rotation:number}>>({});
  const activeUpper=active==='L'?'upperArmL':'upperArmR';
  const activeLower=active==='L'?'lowerArmL':'lowerArmR';
  const bones=useMemo(()=>poseRig(rig,poses),[rig,poses]);
+ const keyedPose=poseKeys.length?interpolatePose(poseKeys,previewFrame):poseFromRig(rig);
  const solve=()=>{
    const root=bones.find(b=>b.id===activeUpper);
    const lower=bones.find(b=>b.id===activeLower);
@@ -24,13 +27,19 @@ export default function RigPreview({rig,onStatus}:Props){
    setPoses(p=>({...p,[activeUpper]:{rotation:result.upperRotation},[activeLower]:{rotation:lowerWorld}}));
    onStatus?.(`${active} arm IK applied • upper ${degrees(result.upperRotation)}° • lower ${degrees(lowerWorld)}°`);
  };
- const reset=()=>{setPoses({});setTarget({x:70,y:58});onStatus?.('Rig pose reset');};
+ const keyPose=()=>{
+   const next=upsertPoseKeyframe(poseKeys,previewFrame,{...keyedPose,...poses});
+   setPoseKeys(next);setPoses(interpolatePose(next,previewFrame));
+   onStatus?.(`Rig pose keyframe • frame ${previewFrame}`);
+ };
+ const reset=()=>{setPoses({});setPoseKeys([]);setPreviewFrame(1);setTarget({x:70,y:58});onStatus?.('Rig pose reset');};
+ const jumpToKey=(frame:number)=>{setPreviewFrame(frame);setPoses(interpolatePose(poseKeys,frame));};
  const drag=(e:React.PointerEvent<SVGSVGElement>)=>{
    const r=e.currentTarget.getBoundingClientRect();
    setTarget({x:Math.max(5,Math.min(95,((e.clientX-r.left)/r.width)*100)),y:Math.max(5,Math.min(95,((e.clientY-r.top)/r.height)*100))});
  };
  return <div className="rig-preview-card">
-   <div className="preview-head"><div><b>RIG PREVIEW</b><small>Bone pose / IK test</small></div><div className="preview-actions"><button className={onion?'active':''} onClick={()=>setOnion(v=>!v)}>Onion</button><button onClick={reset}>Reset</button><button onClick={solve}>Apply IK</button></div></div>
+   <div className="preview-head"><div><b>RIG PREVIEW</b><small>Bone pose / IK / pose keys</small></div><div className="preview-actions"><button className={onion?'active':''} onClick={()=>setOnion(v=>!v)}>Onion</button><button onClick={reset}>Reset</button><button onClick={solve}>Apply IK</button><button onClick={keyPose}>◆ Pose Key</button></div></div>
    <div className="preview-stage"><svg viewBox="0 0 100 100" preserveAspectRatio="none" onPointerDown={drag}>
      {onion&&<g opacity=".14" transform="translate(2,0)">{bones.map(b=><line key={'o'+b.id} x1={b.px} y1={b.py} x2={b.x} y2={b.y} stroke="currentColor" strokeWidth="1.1"/> )}</g>}
      <g>{bones.map(b=><g key={b.id}><line x1={b.px} y1={b.py} x2={b.x} y2={b.y} stroke="currentColor" strokeWidth={b.id==='spine'||b.id==='head'?'2':'1.6'}/><circle cx={b.x} cy={b.y} r={b.id===activeUpper||b.id===activeLower?'2.2':'1.5'}/></g>)}
@@ -38,6 +47,6 @@ export default function RigPreview({rig,onStatus}:Props){
        <circle className={poses[activeUpper]?'ik-solved':'ik-target'} cx={target.x} cy={target.y} r="3"/>
      </g>
    </svg></div>
-   <div className="ik-controls"><button className={active==='L'?'active':''} onClick={()=>setActive('L')}>Left Arm</button><button className={active==='R'?'active':''} onClick={()=>setActive('R')}>Right Arm</button><label>X <input type="range" min="10" max="90" value={target.x} onChange={e=>setTarget(t=>({...t,x:Number(e.target.value)}))}/><b>{Math.round(target.x)}</b></label><label>Y <input type="range" min="10" max="90" value={target.y} onChange={e=>setTarget(t=>({...t,y:Number(e.target.value)}))}/><b>{Math.round(target.y)}</b></label><span className="ik-status">{poses[activeUpper]?'POSE APPLIED':'Drag target / Apply IK'}</span></div>
+   <div className="ik-controls"><button className={active==='L'?'active':''} onClick={()=>setActive('L')}>Left Arm</button><button className={active==='R'?'active':''} onClick={()=>setActive('R')}>Right Arm</button><label>Frame <input type="range" min="1" max="240" value={previewFrame} onChange={e=>jumpToKey(Number(e.target.value))}/><b>{previewFrame}</b></label><label>X <input type="range" min="10" max="90" value={target.x} onChange={e=>setTarget(t=>({...t,x:Number(e.target.value)}))}/><b>{Math.round(target.x)}</b></label><label>Y <input type="range" min="10" max="90" value={target.y} onChange={e=>setTarget(t=>({...t,y:Number(e.target.value)}))}/><b>{Math.round(target.y)}</b></label><span className="ik-status">{poseKeys.length?`POSE KEYS ${poseKeys.map(k=>k.frame).join(' • ')}`:'No pose keys yet'}</span></div>
  </div>;
 }
