@@ -1,0 +1,2 @@
+export function makeFaceKeyframe(frame:number,property:string,value:number){return{id:`face-${property}-${frame}`,frame,property,value,easing:'ease-in-out' as const};}
+export function interpolateFace(keys:Array<{frame:number;value:number}>,frame:number){if(!keys.length)return 0;const s=[...keys].sort((a,b)=>a.frame-b.frame);if(frame<=s[0].frame)return s[0].value;if(frame>=s[s.length-1].frame)return s[s.length-1].value;const n=s.find(k=>k.frame>=frame)!;const p=s[s.indexOf(n)-1];const t=(frame-p.frame)/(n.frame-p.frame);return p.value+(n.value-p.value)*t;}
