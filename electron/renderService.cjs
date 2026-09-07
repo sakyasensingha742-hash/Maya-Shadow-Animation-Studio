@@ -31,8 +31,8 @@ function validateOptions({ outputPath, fps, format, transparent, startFrame, end
   return errors;
 }
 
-function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent }) {
-  const args = ['-y', '-hide_banner', '-loglevel', 'warning', '-framerate', String(fps), '-i', inputPattern];
+function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent, startFrame = 1 }) {
+  const args = ['-y', '-hide_banner', '-loglevel', 'warning', '-framerate', String(fps), '-start_number', String(startFrame), '-i', inputPattern];
   if (format === 'webm') {
     args.push('-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', quality === 'draft' ? '40' : quality === 'final' ? '24' : '32', '-pix_fmt', transparent ? 'yuva420p' : 'yuv420p');
   } else if (format === 'mp4') {
@@ -115,7 +115,7 @@ async function renderSequence(options, onProgress, webContents) {
       return { outputPath: sequenceDir, framesDir, format: 'png-sequence' };
     }
 
-    const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent });
+    const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent, startFrame: start });
     return await new Promise((resolve, reject) => {
       activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
       let stderr = '';
