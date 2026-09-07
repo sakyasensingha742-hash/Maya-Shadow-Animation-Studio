@@ -41,6 +41,7 @@ export function migrateProject(input:Partial<StudioProject>|null|undefined):Stud
  merged.scenes=(input.scenes?.length?input.scenes:fresh.scenes).map(s=>({...s,tracks:s.tracks||[]}));
  merged.assets=input.assets||[];
  merged.activeSceneId=merged.scenes.some(s=>s.id===input.activeSceneId)?input.activeSceneId!:merged.scenes[0].id;
+ if(input.activeCharacterBinding&&typeof input.activeCharacterBinding.assetId==='string'&&typeof input.activeCharacterBinding.rigId==='string')merged.activeCharacterBinding=input.activeCharacterBinding;else delete merged.activeCharacterBinding;
  return merged;
 }
 
