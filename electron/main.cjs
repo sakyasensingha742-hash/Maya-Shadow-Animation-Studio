@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, session, shell } = require('electro
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const { renderSequence, cancelRender } = require('./renderService.cjs');
 
 const isDev = !app.isPackaged;
 let mainWindow;
@@ -31,6 +32,9 @@ function createWindow() {
 
 function sendUpdateStatus(status, info = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('studio:update-status', { status, ...info });
+}
+function sendRenderStatus(status, info = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('studio:render-status', { status, ...info });
 }
 
 function configureUpdater() {
@@ -93,6 +97,26 @@ app.whenReady().then(() => {
     fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
     return { filePath };
   });
+  ipcMain.handle('studio:render-output-dialog', async (_event, payload = {}) => {
+    const extension = payload.format === 'webm' ? 'webm' : payload.format === 'png-sequence' ? 'png' : 'mp4';
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Choose Render Output',
+      defaultPath: payload.defaultName || `maya-shadow-render.${extension}`,
+      filters: [{ name: extension.toUpperCase(), extensions: [extension] }]
+    });
+    return result.canceled || !result.filePath ? { canceled: true } : { canceled: false, filePath: result.filePath };
+  });
+  ipcMain.handle('studio:render-start', async (_event, payload) => {
+    try {
+      sendRenderStatus('rendering', { phase: 'encoding', progress: 0 });
+      const result = await renderSequence(payload, info => sendRenderStatus(info.status, info));
+      return { status: 'complete', ...result };
+    } catch (error) {
+      sendRenderStatus('error', { message: error.message });
+      return { status: 'error', message: error.message };
+    }
+  });
+  ipcMain.handle('studio:render-cancel', () => ({ status: cancelRender() ? 'cancelling' : 'idle' }));
 
   configureUpdater();
   createWindow();
