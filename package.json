@@ -21,7 +21,8 @@
     "react": "latest",
     "react-dom": "latest",
     "lucide-react": "latest",
-    "electron-updater": "4.6.5"
+    "electron-updater": "4.6.5",
+    "ffmpeg-static": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
@@ -29,7 +30,6 @@
     "concurrently": "latest",
     "electron": "latest",
     "electron-builder": "latest",
-    "ffmpeg-static": "latest",
     "wait-on": "latest"
   },
   "build": {
