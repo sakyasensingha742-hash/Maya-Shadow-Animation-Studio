@@ -2,6 +2,7 @@ import type {CharacterRig} from '../rigging/rigEngine';
 import type {CharacterBinding} from '../project/projectModel';
 
 const KEY='maya-shadow-active-character-binding-v1';
+const RIG_PREFIX='maya-shadow-rig-v1-';
 
 export function createCharacterBinding(assetId:string,rig:CharacterRig|null):CharacterBinding|null{
   if(!rig)return null;
@@ -27,7 +28,39 @@ export function loadCharacterBinding():CharacterBinding|null{
 }
 
 export function bindCharacterToRig(assetId:string,rig:CharacterRig|null):CharacterBinding|null{
-  return saveCharacterBinding(createCharacterBinding(assetId,rig));
+  const binding=createCharacterBinding(assetId,rig);
+  if(!binding)return null;
+  saveCharacterBinding(binding);
+  saveRig(binding.rigId,rig);
+  return binding;
+}
+
+export function saveRig(rigId:string,rig:CharacterRig){
+  try{localStorage.setItem(`${RIG_PREFIX}${rigId}`,JSON.stringify(rig));}catch{}
+  return rig;
+}
+
+export function loadRig(rigId:string|null|undefined):CharacterRig|null{
+  if(!rigId)return null;
+  try{
+    const raw=localStorage.getItem(`${RIG_PREFIX}${rigId}`);
+    if(!raw)return null;
+    const value=JSON.parse(raw);
+    if(!value||value.version!==1||!Array.isArray(value.bones)||!Array.isArray(value.facialControls))return null;
+    return value as CharacterRig;
+  }catch{return null}
+}
+
+export function loadBoundRig():CharacterRig|null{
+  return loadRig(loadCharacterBinding()?.rigId);
+}
+
+export function clearCharacterBinding(){
+  const binding=loadCharacterBinding();
+  try{
+    localStorage.removeItem(KEY);
+    if(binding?.rigId)localStorage.removeItem(`${RIG_PREFIX}${binding.rigId}`);
+  }catch{}
 }
 
 function stableRigId(rig:CharacterRig):string{
