@@ -24,12 +24,12 @@ export function loadCharacterBinding():CharacterBinding|null{
     const value=JSON.parse(raw);
     if(typeof value?.assetId!=='string'||typeof value?.rigId!=='string')return null;
     return value as CharacterBinding;
-  }catch{return null}
+  }catch{return null;}
 }
 
 export function bindCharacterToRig(assetId:string,rig:CharacterRig|null):CharacterBinding|null{
   const binding=createCharacterBinding(assetId,rig);
-  if(!binding)return null;
+  if(!binding||!rig)return null;
   saveCharacterBinding(binding);
   saveRig(binding.rigId,rig);
   return binding;
@@ -48,7 +48,7 @@ export function loadRig(rigId:string|null|undefined):CharacterRig|null{
     const value=JSON.parse(raw);
     if(!value||value.version!==1||!Array.isArray(value.bones)||!Array.isArray(value.facialControls))return null;
     return value as CharacterRig;
-  }catch{return null}
+  }catch{return null;}
 }
 
 export function loadBoundRig():CharacterRig|null{
