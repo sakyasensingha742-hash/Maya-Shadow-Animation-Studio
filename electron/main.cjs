@@ -8,23 +8,18 @@ const isDev = !app.isPackaged;
 let mainWindow;
 let rendererReady = false;
 let rendererReadyTimer;
+function smokeMarker(name){return process.env[`MAYA_SHADOW_${name}`]||path.join(app.getPath('temp'),`maya-shadow-${name.toLowerCase()}.txt`)}
 function markRendererReady(){
   if(rendererReady)return;
   rendererReady=true;
   if(rendererReadyTimer)clearTimeout(rendererReadyTimer);
-  if(process.env.MAYA_SHADOW_SMOKE==='1'){
-    const marker=path.join(app.getPath('temp'),'maya-shadow-renderer-ready.txt');
-    fs.writeFileSync(marker,JSON.stringify({version:app.getVersion(),timestamp:new Date().toISOString()}),'utf8');
-  }
+  if(process.env.MAYA_SHADOW_SMOKE==='1')fs.writeFileSync(smokeMarker('SMOKE_MARKER'),'renderer-ready','utf8');
   if(mainWindow&&!mainWindow.isDestroyed())mainWindow.show();
 }
 function showRendererFailure(message){
   const details=`Maya Shadow Animation Studio could not load its UI.\n\n${message}`;
   console.error('[Maya Shadow Renderer]',details);
-  if(process.env.MAYA_SHADOW_SMOKE==='1'){
-    const marker=path.join(app.getPath('temp'),'maya-shadow-renderer-failed.txt');
-    fs.writeFileSync(marker,details,'utf8');
-  }
+  if(process.env.MAYA_SHADOW_SMOKE==='1')fs.writeFileSync(smokeMarker('SMOKE_FAILURE'),details,'utf8');
   if(mainWindow&&!mainWindow.isDestroyed()){
     mainWindow.show();
     dialog.showErrorBox('Maya Shadow UI Load Error',details);
@@ -34,10 +29,7 @@ function createWindow(){
   mainWindow=new BrowserWindow({width:1600,height:1000,minWidth:1100,minHeight:720,backgroundColor:'#0b0f14',show:false,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   mainWindow.once('ready-to-show',()=>{if(rendererReady)mainWindow.show();});
   mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  mainWindow.webContents.on('did-finish-load',()=>{
-    if(rendererReady)return;
-    if(process.env.MAYA_SHADOW_SMOKE==='1')console.log('[Maya Shadow Renderer] HTML finished loading; waiting for React readiness signal.');
-  });
+  mainWindow.webContents.on('did-finish-load',()=>{if(process.env.MAYA_SHADOW_SMOKE==='1'&&!rendererReady)console.log('[Maya Shadow Renderer] HTML finished loading; waiting for React readiness signal.');});
   mainWindow.webContents.on('did-fail-load',(_event,errorCode,errorDescription,validatedURL)=>showRendererFailure(`Load failed (${errorCode}): ${errorDescription}\nURL: ${validatedURL}`));
   mainWindow.webContents.on('render-process-gone',(_event,details)=>showRendererFailure(`Renderer process stopped: ${details.reason} (exit code ${details.exitCode}).`));
   mainWindow.webContents.on('console-message',(_event,level,message,line,source)=>{if(level>=2)console.error(`[Renderer ${level}] ${message} (${source}:${line})`);});
