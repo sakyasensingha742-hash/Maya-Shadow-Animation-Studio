@@ -62,8 +62,8 @@ jobs:
           $ffmpeg = Get-ChildItem -Path release -Recurse -Filter ffmpeg.exe -File | Select-Object -First 1
           if (-not $ffmpeg) { Write-Error 'Packaged FFmpeg runtime binary was not found in the build output.' }
           if ($ffmpeg.Length -lt 1MB) { Write-Error "Packaged FFmpeg binary is unexpectedly small: $($ffmpeg.Length) bytes" }
-          & $ffmpeg.FullName -version | Select-Object -First 1
-          if ($LASTEXITCODE -ne 0) { Write-Error "Packaged FFmpeg failed to execute with code $LASTEXITCODE." }
+          $ffmpegProcess = Start-Process -FilePath $ffmpeg.FullName -ArgumentList '-version' -NoNewWindow -Wait -PassThru
+          if ($ffmpegProcess.ExitCode -ne 0) { Write-Error "Packaged FFmpeg failed to execute with code $($ffmpegProcess.ExitCode)." }
           Write-Host "Packaged FFmpeg: $($ffmpeg.FullName)"
           Write-Host "Size: $([math]::Round($ffmpeg.Length / 1MB, 2)) MB"
 
@@ -83,8 +83,8 @@ jobs:
           if (-not $appExe) { Write-Error 'Installed application executable was not found.' }
           $installedFfmpeg = Join-Path $installDir 'resources\ffmpeg\ffmpeg.exe'
           if (-not (Test-Path $installedFfmpeg)) { Write-Error "Installed FFmpeg runtime was not found: $installedFfmpeg" }
-          & $installedFfmpeg -version | Select-Object -First 1
-          if ($LASTEXITCODE -ne 0) { Write-Error "Installed FFmpeg failed to execute with code $LASTEXITCODE." }
+          $installedFfmpegProcess = Start-Process -FilePath $installedFfmpeg -ArgumentList '-version' -NoNewWindow -Wait -PassThru
+          if ($installedFfmpegProcess.ExitCode -ne 0) { Write-Error "Installed FFmpeg failed to execute with code $($installedFfmpegProcess.ExitCode)." }
           Write-Host "Launching $($appExe.FullName)"
           $env:MAYA_SHADOW_SMOKE = '1'
           $env:MAYA_SHADOW_SMOKE_MARKER = $readyMarker
