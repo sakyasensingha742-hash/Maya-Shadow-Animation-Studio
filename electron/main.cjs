@@ -19,7 +19,10 @@ function markRendererReady(){
 function showRendererFailure(message){
   const details=`Maya Shadow Animation Studio could not load its UI.\n\n${message}`;
   console.error('[Maya Shadow Renderer]',details);
-  if(process.env.MAYA_SHADOW_SMOKE==='1')fs.writeFileSync(smokeMarker('SMOKE_FAILURE'),details,'utf8');
+  if(process.env.MAYA_SHADOW_SMOKE==='1'){
+    fs.writeFileSync(smokeMarker('SMOKE_FAILURE'),details,'utf8');
+    return;
+  }
   if(mainWindow&&!mainWindow.isDestroyed()){
     mainWindow.show();
     dialog.showErrorBox('Maya Shadow UI Load Error',details);
