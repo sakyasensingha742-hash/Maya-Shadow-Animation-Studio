@@ -12,7 +12,10 @@ export function replaceCharacterAsset(assets:Asset[],replacement:Asset,image:str
 
 /** Create the persistent relationship between the active character asset and rig. */
 export function bindCharacterToRig(asset:Asset,rig:CharacterRig):CharacterBinding{
- return {assetId:asset.id,rigId:rig.id,boundAt:new Date().toISOString()};
+ const bones=rig.bones.map(b=>b.id).join('|');
+ let hash=2166136261;
+ for(let i=0;i<bones.length;i++){hash^=bones.charCodeAt(i);hash=Math.imul(hash,16777619)}
+ return {assetId:asset.id,rigId:`rig-${(hash>>>0).toString(16)}`,boundAt:new Date().toISOString()};
 }
 
 /** Rebind a replacement character to the existing rig while preserving animation tracks. */
