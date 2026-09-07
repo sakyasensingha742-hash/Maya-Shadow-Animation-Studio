@@ -2,12 +2,18 @@ import {Asset,CharacterBinding} from '../project/projectModel';
 import {CharacterRig} from '../rigging/rigEngine';
 
 export type CharacterReplacementResult={assets:Asset[];image:string;preservedRig:boolean;preservedTimeline:boolean};
+const ACTIVE_CHARACTER_KEY='maya-shadow-active-character-asset-v1';
 
 /** Replace the active character asset without touching rig/timeline state. */
 export function replaceCharacterAsset(assets:Asset[],replacement:Asset,image:string):CharacterReplacementResult{
  const next=assets.filter(asset=>asset.type!=='character');
  next.push(replacement);
+ try{localStorage.setItem(ACTIVE_CHARACTER_KEY,replacement.id)}catch{}
  return {assets:next,image,preservedRig:true,preservedTimeline:true};
+}
+
+export function loadActiveCharacterAssetId():string|null{
+ try{return localStorage.getItem(ACTIVE_CHARACTER_KEY)}catch{return null}
 }
 
 /** Create the persistent relationship between the active character asset and rig. */
