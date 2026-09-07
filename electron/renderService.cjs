@@ -130,21 +130,34 @@ async function renderSequence(options, onProgress, webContents) {
     return await new Promise((resolve, reject) => {
       activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
       let stderr = '';
+      let stderrBuffer = '';
+
       activeProcess.stderr.on('data', chunk => {
-        stderr += chunk.toString();
-        const matches = stderr.match(/frame=\s*(\d+)/g);
-        if (matches?.length) {
-          const frame = Number(matches[matches.length - 1].replace(/\D/g, ''));
-          onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.min(50, Math.round((frame / total) * 50)), frame });
-          stderr = stderr.slice(-4000);
+        stderrBuffer += chunk.toString();
+        const lines = stderrBuffer.split(/\r?\n/);
+        stderrBuffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) stderr = `${stderr}\n${line}`.slice(-12000);
+          const match = line.match(/(?:^|\s)frame=\s*(\d+)/);
+          if (!match) continue;
+          const frame = Number(match[1]);
+          if (!Number.isFinite(frame)) continue;
+          onProgress?.({
+            status: 'rendering',
+            phase: 'encoding',
+            progress: 50 + Math.min(50, Math.round((frame / total) * 50)),
+            frame
+          });
         }
       });
+
       activeProcess.on('error', err => { activeProcess = null; reject(err); });
       activeProcess.on('close', code => {
         const wasCancelled = cancelled || code === null;
         activeProcess = null;
         if (wasCancelled) return reject(new Error('Render cancelled.'));
-        if (code !== 0) return reject(new Error(stderr.trim() || `FFmpeg exited with code ${code}`));
+        if (code !== 0) return reject(new Error(`${stderr}${stderrBuffer ? `\n${stderrBuffer}` : ''}`.trim() || `FFmpeg exited with code ${code}`));
         onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
         resolve({ outputPath, framesDir: ownsFramesDir ? null : framesDir, format });
       });
