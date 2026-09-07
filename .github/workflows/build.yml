@@ -72,7 +72,9 @@ jobs:
         run: |
           $installer = Get-ChildItem -Path release -Filter *.exe -File | Select-Object -First 1
           $installDir = Join-Path $env:RUNNER_TEMP 'maya-shadow-smoke'
-          Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue
+          $readyMarker = Join-Path $env:RUNNER_TEMP 'maya-shadow-renderer-ready.txt'
+          $failureMarker = Join-Path $env:RUNNER_TEMP 'maya-shadow-renderer-failure.txt'
+          Remove-Item $installDir,$readyMarker,$failureMarker -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $installDir -Force | Out-Null
           Write-Host "Installing $($installer.Name) to $installDir"
           $installerProcess = Start-Process -FilePath $installer.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
@@ -84,10 +86,18 @@ jobs:
           & $installedFfmpeg -version | Select-Object -First 1
           if ($LASTEXITCODE -ne 0) { Write-Error "Installed FFmpeg failed to execute with code $LASTEXITCODE." }
           Write-Host "Launching $($appExe.FullName)"
+          $env:MAYA_SHADOW_SMOKE = '1'
+          $env:MAYA_SHADOW_SMOKE_MARKER = $readyMarker
+          $env:MAYA_SHADOW_SMOKE_FAILURE = $failureMarker
           $appProcess = Start-Process -FilePath $appExe.FullName -PassThru
-          Start-Sleep -Seconds 10
-          if ($appProcess.HasExited) { Write-Error "Application exited during smoke test with code $($appProcess.ExitCode)." }
-          Write-Host 'Application remained running for the smoke-test window.'
+          $deadline = (Get-Date).AddSeconds(20)
+          while ((Get-Date) -lt $deadline -and -not (Test-Path $readyMarker) -and -not (Test-Path $failureMarker)) {
+            if ($appProcess.HasExited) { Write-Error "Application exited during renderer smoke test with code $($appProcess.ExitCode)." }
+            Start-Sleep -Milliseconds 500
+          }
+          if (Test-Path $failureMarker) { Write-Error (Get-Content $failureMarker -Raw) }
+          if (-not (Test-Path $readyMarker)) { Write-Error 'Renderer did not report ready within 20 seconds; packaged UI may be blank.' }
+          Write-Host 'Renderer readiness smoke test passed.'
           Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
 
       - name: Upload Windows installer
