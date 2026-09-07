@@ -29,15 +29,18 @@
     "electron": "latest",
     "electron-builder": "latest",
     "electron-updater": "latest",
+    "ffmpeg-static": "latest",
     "wait-on": "latest"
   },
   "build": {
     "appId": "com.mayashadow.animationstudio",
     "productName": "Maya Shadow Animation Studio",
     "asar": true,
+    "asarUnpack": ["node_modules/ffmpeg-static/**/*"],
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "node_modules/ffmpeg-static/**/*",
       "package.json"
     ],
     "directories": {
