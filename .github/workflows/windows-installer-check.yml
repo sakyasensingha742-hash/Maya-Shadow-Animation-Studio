@@ -11,7 +11,7 @@ permissions:
 jobs:
   windows-installer:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +25,24 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Build Windows installer
-        run: npm run dist:win
+        shell: pwsh
+        run: |
+          $lastExitCode = 1
+          for ($attempt = 1; $attempt -le 2; $attempt++) {
+            Write-Host "Windows installer build attempt $attempt of 2"
+            npm run dist:win
+            $lastExitCode = $LASTEXITCODE
+            if ($lastExitCode -eq 0) {
+              break
+            }
+            if ($attempt -lt 2) {
+              Write-Warning "Installer build failed on attempt $attempt; retrying after 10 seconds."
+              Start-Sleep -Seconds 10
+            }
+          }
+          if ($lastExitCode -ne 0) {
+            exit $lastExitCode
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
