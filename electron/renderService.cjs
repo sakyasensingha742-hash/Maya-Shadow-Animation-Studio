@@ -57,10 +57,20 @@ async function copyPngSequence(framesDir, outputPath, onProgress, total) {
   return targetDir;
 }
 
+function removeTempDir(dir) {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup; never hide the original render result/error.
+  }
+}
+
 async function renderSequence(options, onProgress, webContents) {
   if (renderActive) throw new Error('A render is already running.');
   renderActive = true;
   cancelled = false;
+  let framesDir = null;
+  let ownsFramesDir = false;
 
   try {
     const {
@@ -89,7 +99,8 @@ async function renderSequence(options, onProgress, webContents) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}`);
+    ownsFramesDir = !inputDir;
+    framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}-${process.pid}`);
     fs.mkdirSync(framesDir, { recursive: true });
 
     if (webContents) {
@@ -112,7 +123,7 @@ async function renderSequence(options, onProgress, webContents) {
     if (format === 'png-sequence') {
       const sequenceDir = await copyPngSequence(framesDir, outputPath, onProgress, total);
       onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-      return { outputPath: sequenceDir, framesDir, format: 'png-sequence' };
+      return { outputPath: sequenceDir, framesDir: ownsFramesDir ? null : framesDir, format: 'png-sequence' };
     }
 
     const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent, startFrame: start });
@@ -135,11 +146,12 @@ async function renderSequence(options, onProgress, webContents) {
         if (wasCancelled) return reject(new Error('Render cancelled.'));
         if (code !== 0) return reject(new Error(stderr.trim() || `FFmpeg exited with code ${code}`));
         onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-        resolve({ outputPath, framesDir, format });
+        resolve({ outputPath, framesDir: ownsFramesDir ? null : framesDir, format });
       });
     });
   } finally {
     activeProcess = null;
+    if (ownsFramesDir && framesDir) removeTempDir(framesDir);
     renderActive = false;
   }
 }
