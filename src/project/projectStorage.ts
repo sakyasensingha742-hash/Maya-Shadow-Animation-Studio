@@ -23,6 +23,14 @@ export async function listRecoverySnapshots():Promise<Snapshot[]>{
  return await new Promise<Snapshot[]>((resolve,reject)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).getAll();req.onsuccess=()=>{db.close();resolve((req.result as Snapshot[]).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)))};req.onerror=()=>{db.close();reject(req.error)}});
 }
 
+export async function loadLatestRecoverySnapshot():Promise<StudioProject|null>{
+ try{
+  const snapshots=await listRecoverySnapshots();
+  const latest=snapshots[0];
+  return latest?.project?migrateProject(latest.project):null;
+ }catch{return null}
+}
+
 export async function deleteRecoverySnapshot(id:string){
  if(typeof indexedDB==='undefined')return;
  const db=await openDb();
