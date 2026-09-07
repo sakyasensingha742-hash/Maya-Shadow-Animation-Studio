@@ -24,11 +24,7 @@ export async function listRecoverySnapshots():Promise<Snapshot[]>{
 }
 
 export async function loadLatestRecoverySnapshot():Promise<StudioProject|null>{
- try{
-  const snapshots=await listRecoverySnapshots();
-  const latest=snapshots[0];
-  return latest?.project?migrateProject(latest.project):null;
- }catch{return null}
+ try{const snapshots=await listRecoverySnapshots();const latest=snapshots[0];return latest?.project?migrateProject(latest.project):null}catch{return null}
 }
 
 export async function deleteRecoverySnapshot(id:string){
