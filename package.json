@@ -21,7 +21,7 @@
     "react": "latest",
     "react-dom": "latest",
     "lucide-react": "latest",
-    "electron-updater": "^4.6.5"
+    "electron-updater": "4.6.5"
   },
   "devDependencies": {
     "@types/react": "latest",
