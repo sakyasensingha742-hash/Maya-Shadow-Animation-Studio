@@ -32,7 +32,7 @@ function validateOptions({ outputPath, fps, format, transparent, startFrame, end
 }
 
 function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent, startFrame = 1 }) {
-  const args = ['-y', '-hide_banner', '-loglevel', 'warning', '-framerate', String(fps), '-start_number', String(startFrame), '-i', inputPattern];
+  const args = ['-y', '-hide_banner', '-loglevel', 'warning', '-nostats', '-progress', 'pipe:2', '-framerate', String(fps), '-start_number', String(startFrame), '-i', inputPattern];
   if (format === 'webm') {
     args.push('-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', quality === 'draft' ? '40' : quality === 'final' ? '24' : '32', '-pix_fmt', transparent ? 'yuva420p' : 'yuv420p');
   } else if (format === 'mp4') {
@@ -44,24 +44,55 @@ function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent
   return args;
 }
 
-async function copyPngSequence(framesDir, outputPath, onProgress, total) {
-  const targetDir = outputPath.toLowerCase().endsWith('.png') ? outputPath.slice(0, -4) : outputPath;
-  fs.mkdirSync(targetDir, { recursive: true });
-  const frames = fs.readdirSync(framesDir).filter(name => /^frame_\d{6}\.png$/i.test(name)).sort();
-  if (!frames.length) throw new Error('No captured PNG frames were found.');
-  for (let i = 0; i < frames.length; i += 1) {
-    if (cancelled) throw new Error('Render cancelled.');
-    fs.copyFileSync(path.join(framesDir, frames[i]), path.join(targetDir, frames[i]));
-    onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.round(((i + 1) / total) * 50), frame: i + 1 });
+function removePath(target) {
+  try {
+    fs.rmSync(target, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup; never hide the original render result/error.
   }
-  return targetDir;
 }
 
 function removeTempDir(dir) {
+  removePath(dir);
+}
+
+function createSiblingTempPath(targetPath, label = 'rendering') {
+  const absolute = path.resolve(targetPath);
+  const parent = path.dirname(absolute);
+  const base = path.basename(absolute);
+  return path.join(parent, `.${base}.${label}-${Date.now()}-${process.pid}`);
+}
+
+function commitFileOutput(tempPath, outputPath) {
+  if (!fs.existsSync(tempPath)) throw new Error('Render completed without producing an output file.');
+  removePath(outputPath);
+  fs.renameSync(tempPath, outputPath);
+}
+
+function commitDirectoryOutput(tempDir, outputDir) {
+  if (!fs.existsSync(tempDir)) throw new Error('Render completed without producing an output directory.');
+  removePath(outputDir);
+  fs.renameSync(tempDir, outputDir);
+}
+
+async function copyPngSequence(framesDir, outputPath, onProgress, total) {
+  const targetDir = outputPath.toLowerCase().endsWith('.png') ? outputPath.slice(0, -4) : outputPath;
+  const stagingDir = createSiblingTempPath(targetDir, 'sequence');
+  removePath(stagingDir);
+  fs.mkdirSync(stagingDir, { recursive: true });
   try {
-    fs.rmSync(dir, { recursive: true, force: true });
-  } catch {
-    // Best-effort cleanup; never hide the original render result/error.
+    const frames = fs.readdirSync(framesDir).filter(name => /^frame_\d{6}\.png$/i.test(name)).sort();
+    if (!frames.length) throw new Error('No captured PNG frames were found.');
+    for (let i = 0; i < frames.length; i += 1) {
+      if (cancelled) throw new Error('Render cancelled.');
+      fs.copyFileSync(path.join(framesDir, frames[i]), path.join(stagingDir, frames[i]));
+      onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.min(50, Math.round(((i + 1) / total) * 50)), frame: i + 1 });
+    }
+    commitDirectoryOutput(stagingDir, targetDir);
+    return targetDir;
+  } catch (error) {
+    removePath(stagingDir);
+    throw error;
   }
 }
 
@@ -71,6 +102,7 @@ async function renderSequence(options, onProgress, webContents) {
   cancelled = false;
   let framesDir = null;
   let ownsFramesDir = false;
+  let temporaryOutputPath = null;
 
   try {
     const {
@@ -126,29 +158,40 @@ async function renderSequence(options, onProgress, webContents) {
       return { outputPath: sequenceDir, framesDir: ownsFramesDir ? null : framesDir, format: 'png-sequence' };
     }
 
-    const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent, startFrame: start });
+    temporaryOutputPath = createSiblingTempPath(outputPath, 'video');
+    removePath(temporaryOutputPath);
+    const args = buildArgs({ inputPattern: pattern, outputPath: temporaryOutputPath, fps: normalized.fps, format, quality, transparent, startFrame: start });
+
     return await new Promise((resolve, reject) => {
       activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
       let stderr = '';
-      let stderrBuffer = '';
+      let progressBuffer = '';
+      let lastFrame = 0;
 
       activeProcess.stderr.on('data', chunk => {
-        stderrBuffer += chunk.toString();
-        const lines = stderrBuffer.split(/\r?\n/);
-        stderrBuffer = lines.pop() || '';
+        progressBuffer += chunk.toString();
+        const lines = progressBuffer.split(/\r?\n/);
+        progressBuffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.trim()) stderr = `${stderr}\n${line}`.slice(-12000);
-          const match = line.match(/(?:^|\s)frame=\s*(\d+)/);
-          if (!match) continue;
-          const frame = Number(match[1]);
-          if (!Number.isFinite(frame)) continue;
-          onProgress?.({
-            status: 'rendering',
-            phase: 'encoding',
-            progress: 50 + Math.min(50, Math.round((frame / total) * 50)),
-            frame
-          });
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (/^frame=\d+$/.test(trimmed)) {
+            const frame = Number(trimmed.slice(6));
+            if (Number.isFinite(frame) && frame >= lastFrame) {
+              lastFrame = frame;
+              const ratio = Math.max(0, Math.min(1, frame / total));
+              onProgress?.({
+                status: 'rendering',
+                phase: 'encoding',
+                progress: 50 + Math.round(ratio * 50),
+                frame
+              });
+            }
+          } else if (!/^out_/.test(trimmed) && !/^progress=/.test(trimmed) && !/^stream_/.test(trimmed) && !/^bitrate=/.test(trimmed) && !/^fps=/.test(trimmed) && !/^speed=/.test(trimmed) && !/^dup_frames=/.test(trimmed) && !/^drop_frames=/.test(trimmed) && !/^total_size=/.test(trimmed) && !/^out_time/.test(trimmed)) {
+            stderr = `${stderr}\n${trimmed}`.slice(-12000);
+          }
         }
       });
 
@@ -157,13 +200,20 @@ async function renderSequence(options, onProgress, webContents) {
         const wasCancelled = cancelled || code === null;
         activeProcess = null;
         if (wasCancelled) return reject(new Error('Render cancelled.'));
-        if (code !== 0) return reject(new Error(`${stderr}${stderrBuffer ? `\n${stderrBuffer}` : ''}`.trim() || `FFmpeg exited with code ${code}`));
-        onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-        resolve({ outputPath, framesDir: ownsFramesDir ? null : framesDir, format });
+        if (code !== 0) return reject(new Error(`${stderr}${progressBuffer ? `\n${progressBuffer}` : ''}`.trim() || `FFmpeg exited with code ${code}`));
+        try {
+          commitFileOutput(temporaryOutputPath, outputPath);
+          temporaryOutputPath = null;
+          onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
+          resolve({ outputPath, framesDir: ownsFramesDir ? null : framesDir, format });
+        } catch (error) {
+          reject(error);
+        }
       });
     });
   } finally {
     activeProcess = null;
+    if (temporaryOutputPath) removePath(temporaryOutputPath);
     if (ownsFramesDir && framesDir) removeTempDir(framesDir);
     renderActive = false;
   }
