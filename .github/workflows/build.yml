@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund
+      - name: Validate Electron main-process syntax
+        run: node --check electron/main.cjs && node --check electron/renderCapture.cjs && node --check electron/renderService.cjs
       - run: npm run build
 
   windows-installer:
@@ -34,6 +36,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Validate Electron main-process syntax
+        run: node --check electron/main.cjs; node --check electron/renderCapture.cjs; node --check electron/renderService.cjs
 
       - name: Build Windows installer
         run: npm run dist:win
@@ -54,6 +59,19 @@ jobs:
             Write-Host "Installer: $($installer.FullName)"
             Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
           }
+
+      - name: Verify packaged FFmpeg runtime
+        shell: pwsh
+        run: |
+          $ffmpeg = Get-ChildItem -Path release -Recurse -Filter ffmpeg.exe -File | Select-Object -First 1
+          if (-not $ffmpeg) {
+            Write-Error 'Packaged FFmpeg runtime binary was not found in the build output.'
+          }
+          if ($ffmpeg.Length -lt 1MB) {
+            Write-Error "Packaged FFmpeg binary is unexpectedly small: $($ffmpeg.Length) bytes"
+          }
+          Write-Host "Packaged FFmpeg: $($ffmpeg.FullName)"
+          Write-Host "Size: $([math]::Round($ffmpeg.Length / 1MB, 2)) MB"
 
       - name: Smoke test installed application
         shell: pwsh
