@@ -6,6 +6,7 @@ const ffmpegPath = require('ffmpeg-static');
 const { captureSequence } = require('./renderCapture.cjs');
 
 let activeProcess = null;
+let renderActive = false;
 let cancelled = false;
 
 const LIMITS = { minWidth: 320, minHeight: 240, maxWidth: 3840, maxHeight: 3840, maxPixels: 3840 * 3840 };
@@ -57,75 +58,90 @@ async function copyPngSequence(framesDir, outputPath, onProgress, total) {
 }
 
 async function renderSequence(options, onProgress, webContents) {
-  if (activeProcess) throw new Error('A render is already running.');
+  if (renderActive) throw new Error('A render is already running.');
+  renderActive = true;
   cancelled = false;
-  const {
-    inputDir,
-    outputPath,
-    fps = 24,
-    format = 'mp4',
-    quality = 'preview',
-    transparent = false,
-    startFrame = 1,
-    endFrame,
-    width = 1920,
-    height = 1080
-  } = options;
 
-  const start = Math.max(1, Number(startFrame) || 1);
-  const end = Math.max(start, Number(endFrame) || start);
-  const normalized = { outputPath, fps: Number(fps), format, transparent, startFrame: start, endFrame: end, width: Number(width), height: Number(height) };
-  const errors = validateOptions(normalized);
-  if (errors.length) throw new Error(errors.join(' '));
+  try {
+    const {
+      inputDir,
+      outputPath,
+      fps = 24,
+      format = 'mp4',
+      quality = 'preview',
+      transparent = false,
+      startFrame = 1,
+      endFrame,
+      width = 1920,
+      height = 1080
+    } = options;
 
-  const framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}`);
-  fs.mkdirSync(framesDir, { recursive: true });
+    const start = Math.max(1, Number(startFrame) || 1);
+    const end = Math.max(start, Number(endFrame) || start);
+    const normalized = { outputPath, fps: Number(fps), format, transparent, startFrame: start, endFrame: end, width: Number(width), height: Number(height) };
+    const errors = validateOptions(normalized);
+    if (errors.length) throw new Error(errors.join(' '));
 
-  if (webContents) {
-    onProgress?.({ status: 'rendering', phase: 'capturing', progress: 0, frame: start });
-    await captureSequence(webContents, {
-      framesDir,
-      width: normalized.width,
-      height: normalized.height,
-      startFrame: start,
-      endFrame: end,
-      isCancelled: () => cancelled
-    }, onProgress);
-  }
+    if (outputPath) {
+      const outputDir = format === 'png-sequence'
+        ? (outputPath.toLowerCase().endsWith('.png') ? path.dirname(outputPath) : outputPath)
+        : path.dirname(outputPath);
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
 
-  if (!fs.existsSync(framesDir)) throw new Error('Render frame directory was not found.');
-  const total = end - start + 1;
-  const pattern = path.join(framesDir, 'frame_%06d.png');
+    const framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}`);
+    fs.mkdirSync(framesDir, { recursive: true });
 
-  if (format === 'png-sequence') {
-    const sequenceDir = await copyPngSequence(framesDir, outputPath, onProgress, total);
-    onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-    return { outputPath: sequenceDir, framesDir, format: 'png-sequence' };
-  }
+    if (webContents) {
+      onProgress?.({ status: 'rendering', phase: 'capturing', progress: 0, frame: start });
+      await captureSequence(webContents, {
+        framesDir,
+        width: normalized.width,
+        height: normalized.height,
+        startFrame: start,
+        endFrame: end,
+        isCancelled: () => cancelled
+      }, onProgress);
+    }
 
-  const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent });
-  return new Promise((resolve, reject) => {
-    activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
-    let stderr = '';
-    activeProcess.stderr.on('data', chunk => {
-      stderr += chunk.toString();
-      const matches = stderr.match(/frame=\s*(\d+)/g);
-      if (matches?.length) {
-        const frame = Number(matches[matches.length - 1].replace(/\D/g, ''));
-        onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.min(50, Math.round((frame / total) * 50)), frame });
-        stderr = stderr.slice(-4000);
-      }
-    });
-    activeProcess.on('error', err => { activeProcess = null; reject(err); });
-    activeProcess.on('close', code => {
-      const wasCancelled = cancelled || code === null;
-      activeProcess = null;
-      if (wasCancelled) return reject(new Error('Render cancelled.'));
-      if (code !== 0) return reject(new Error(stderr.trim() || `FFmpeg exited with code ${code}`));
+    if (cancelled) throw new Error('Render cancelled.');
+    if (!fs.existsSync(framesDir)) throw new Error('Render frame directory was not found.');
+    const total = end - start + 1;
+    const pattern = path.join(framesDir, 'frame_%06d.png');
+
+    if (format === 'png-sequence') {
+      const sequenceDir = await copyPngSequence(framesDir, outputPath, onProgress, total);
       onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-      resolve({ outputPath, framesDir, format });
+      return { outputPath: sequenceDir, framesDir, format: 'png-sequence' };
+    }
+
+    const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent });
+    return await new Promise((resolve, reject) => {
+      activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
+      let stderr = '';
+      activeProcess.stderr.on('data', chunk => {
+        stderr += chunk.toString();
+        const matches = stderr.match(/frame=\s*(\d+)/g);
+        if (matches?.length) {
+          const frame = Number(matches[matches.length - 1].replace(/\D/g, ''));
+          onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.min(50, Math.round((frame / total) * 50)), frame });
+          stderr = stderr.slice(-4000);
+        }
+      });
+      activeProcess.on('error', err => { activeProcess = null; reject(err); });
+      activeProcess.on('close', code => {
+        const wasCancelled = cancelled || code === null;
+        activeProcess = null;
+        if (wasCancelled) return reject(new Error('Render cancelled.'));
+        if (code !== 0) return reject(new Error(stderr.trim() || `FFmpeg exited with code ${code}`));
+        onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
+        resolve({ outputPath, framesDir, format });
+      });
     });
-  });
+  } finally {
+    activeProcess = null;
+    renderActive = false;
+  }
 }
 
 function cancelRender() {
