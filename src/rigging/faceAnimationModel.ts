@@ -12,3 +12,5 @@ export function faceValuesFromKeyframes(keyframes:Array<{property:string;value:u
  for(const k of keyframes){if(k.property in out&&typeof k.value==='number')out[k.property as keyof FaceAnimationValues]=clampFace(k.value)}
  return out;
 }
+
+export {faceValuesAtFrame} from '../animation/faceTrack';
