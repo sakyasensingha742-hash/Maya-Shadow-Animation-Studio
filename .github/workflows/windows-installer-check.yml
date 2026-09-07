@@ -62,6 +62,15 @@ jobs:
           if (-not $appExe) {
             Write-Error 'Installed application executable was not found.'
           }
+          $resourcesDir = Join-Path $appExe.Directory.FullName 'resources'
+          $ffmpegBinary = Join-Path $resourcesDir 'ffmpeg\ffmpeg.exe'
+          if (-not (Test-Path $ffmpegBinary -PathType Leaf)) {
+            Write-Error "Packaged FFmpeg binary was not found: $ffmpegBinary"
+          }
+          if ((Get-Item $ffmpegBinary).Length -lt 1MB) {
+            Write-Error "Packaged FFmpeg binary is unexpectedly small: $ffmpegBinary"
+          }
+          Write-Host "Packaged FFmpeg: $ffmpegBinary"
           Write-Host "Launching $($appExe.FullName)"
           $appProcess = Start-Process -FilePath $appExe.FullName -PassThru
           Start-Sleep -Seconds 10
