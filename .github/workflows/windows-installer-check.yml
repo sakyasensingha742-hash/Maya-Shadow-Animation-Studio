@@ -11,6 +11,7 @@ permissions:
 jobs:
   windows-installer:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,20 +23,27 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build Windows installer
         run: npm run dist:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify installer output
         shell: pwsh
         run: |
-          $installer = Get-ChildItem -Path release -Filter *.exe | Select-Object -First 1
-          if (-not $installer) {
+          $installers = @(Get-ChildItem -Path release -Filter *.exe -File)
+          if ($installers.Count -eq 0) {
             Write-Error 'Windows installer was not produced.'
           }
-          Write-Host "Installer: $($installer.FullName)"
-          Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
+          foreach ($installer in $installers) {
+            if ($installer.Length -lt 1MB) {
+              Write-Error "Installer is unexpectedly small: $($installer.Name)"
+            }
+            Write-Host "Installer: $($installer.FullName)"
+            Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
+          }
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
