@@ -8,10 +8,26 @@ const { captureSequence } = require('./renderCapture.cjs');
 let activeProcess = null;
 let cancelled = false;
 
+const LIMITS = { minWidth: 320, minHeight: 240, maxWidth: 3840, maxHeight: 3840, maxPixels: 3840 * 3840 };
+
 function qualityArgs(quality) {
   if (quality === 'draft') return ['-preset', 'ultrafast', '-crf', '28'];
   if (quality === 'final') return ['-preset', 'slow', '-crf', '18'];
   return ['-preset', 'medium', '-crf', '23'];
+}
+
+function validateOptions({ outputPath, fps, format, transparent, startFrame, endFrame, width, height }) {
+  const errors = [];
+  if (!outputPath) errors.push('Render output path is required.');
+  if (!Number.isFinite(width) || width < LIMITS.minWidth || width > LIMITS.maxWidth) errors.push(`Width must be ${LIMITS.minWidth}–${LIMITS.maxWidth}px.`);
+  if (!Number.isFinite(height) || height < LIMITS.minHeight || height > LIMITS.maxHeight) errors.push(`Height must be ${LIMITS.minHeight}–${LIMITS.maxHeight}px.`);
+  if (Number(width) * Number(height) > LIMITS.maxPixels) errors.push('Resolution exceeds the safe 4K-class render limit.');
+  if (![24, 25, 30, 60].includes(Number(fps))) errors.push('FPS must be 24, 25, 30 or 60.');
+  if (!['mp4', 'webm', 'png-sequence'].includes(format)) errors.push('Unsupported render format.');
+  if (transparent && format === 'mp4') errors.push('Transparent background is not supported by MP4; use WebM or PNG Sequence.');
+  if (!Number.isInteger(Number(startFrame)) || Number(startFrame) < 1) errors.push('Start frame must be a positive integer.');
+  if (!Number.isInteger(Number(endFrame)) || Number(endFrame) < Number(startFrame)) errors.push('End frame must be greater than or equal to Start frame.');
+  return errors;
 }
 
 function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent }) {
@@ -25,6 +41,19 @@ function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent
   }
   args.push(outputPath);
   return args;
+}
+
+async function copyPngSequence(framesDir, outputPath, onProgress, total) {
+  const targetDir = outputPath.toLowerCase().endsWith('.png') ? outputPath.slice(0, -4) : outputPath;
+  fs.mkdirSync(targetDir, { recursive: true });
+  const frames = fs.readdirSync(framesDir).filter(name => /^frame_\d{6}\.png$/i.test(name)).sort();
+  if (!frames.length) throw new Error('No captured PNG frames were found.');
+  for (let i = 0; i < frames.length; i += 1) {
+    if (cancelled) throw new Error('Render cancelled.');
+    fs.copyFileSync(path.join(framesDir, frames[i]), path.join(targetDir, frames[i]));
+    onProgress?.({ status: 'rendering', phase: 'encoding', progress: 50 + Math.round(((i + 1) / total) * 50), frame: i + 1 });
+  }
+  return targetDir;
 }
 
 async function renderSequence(options, onProgress, webContents) {
@@ -42,18 +71,22 @@ async function renderSequence(options, onProgress, webContents) {
     width = 1920,
     height = 1080
   } = options;
-  if (!outputPath) throw new Error('Render output path is required.');
-  const framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}`);
-  fs.mkdirSync(framesDir, { recursive: true });
+
   const start = Math.max(1, Number(startFrame) || 1);
   const end = Math.max(start, Number(endFrame) || start);
+  const normalized = { outputPath, fps: Number(fps), format, transparent, startFrame: start, endFrame: end, width: Number(width), height: Number(height) };
+  const errors = validateOptions(normalized);
+  if (errors.length) throw new Error(errors.join(' '));
+
+  const framesDir = inputDir || path.join(os.tmpdir(), `maya-shadow-render-${Date.now()}`);
+  fs.mkdirSync(framesDir, { recursive: true });
 
   if (webContents) {
     onProgress?.({ status: 'rendering', phase: 'capturing', progress: 0, frame: start });
     await captureSequence(webContents, {
       framesDir,
-      width,
-      height,
+      width: normalized.width,
+      height: normalized.height,
       startFrame: start,
       endFrame: end,
       isCancelled: () => cancelled
@@ -61,11 +94,16 @@ async function renderSequence(options, onProgress, webContents) {
   }
 
   if (!fs.existsSync(framesDir)) throw new Error('Render frame directory was not found.');
-  if (format === 'mp4' && transparent) throw new Error('Transparent background is not supported by MP4.');
-  const pattern = path.join(framesDir, 'frame_%06d.png');
-  const args = buildArgs({ inputPattern: pattern, outputPath, fps, format, quality, transparent });
   const total = end - start + 1;
+  const pattern = path.join(framesDir, 'frame_%06d.png');
 
+  if (format === 'png-sequence') {
+    const sequenceDir = await copyPngSequence(framesDir, outputPath, onProgress, total);
+    onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
+    return { outputPath: sequenceDir, framesDir, format: 'png-sequence' };
+  }
+
+  const args = buildArgs({ inputPattern: pattern, outputPath, fps: normalized.fps, format, quality, transparent });
   return new Promise((resolve, reject) => {
     activeProcess = spawn(ffmpegPath, args, { windowsHide: true });
     let stderr = '';
@@ -85,7 +123,7 @@ async function renderSequence(options, onProgress, webContents) {
       if (wasCancelled) return reject(new Error('Render cancelled.'));
       if (code !== 0) return reject(new Error(stderr.trim() || `FFmpeg exited with code ${code}`));
       onProgress?.({ status: 'complete', phase: 'encoding', progress: 100 });
-      resolve({ outputPath, framesDir });
+      resolve({ outputPath, framesDir, format });
     });
   });
 }
@@ -97,4 +135,4 @@ function cancelRender() {
   return true;
 }
 
-module.exports = { renderSequence, cancelRender, buildArgs };
+module.exports = { renderSequence, cancelRender, buildArgs, validateOptions };
