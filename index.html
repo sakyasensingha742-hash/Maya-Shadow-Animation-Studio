@@ -8,6 +8,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (() => {
+        const reportReady = () => {
+          if (window.__mayaShadowRendererReady) return;
+          const root = document.getElementById('root');
+          if (!root || !root.firstElementChild) return;
+          window.__mayaShadowRendererReady = true;
+          window.mayaShadowDesktop?.rendererReady?.();
+        };
+        const observer = new MutationObserver(reportReady);
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        window.addEventListener('load', reportReady);
+        setTimeout(reportReady, 1000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script type="module" src="/src/ai/assistantWidget.ts"></script>
     <script type="module" src="/src/studio/controlCenter.ts"></script>
