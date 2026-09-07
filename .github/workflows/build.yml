@@ -49,13 +49,9 @@ jobs:
         shell: pwsh
         run: |
           $installers = @(Get-ChildItem -Path release -Filter *.exe -File)
-          if ($installers.Count -eq 0) {
-            Write-Error 'Windows installer was not produced.'
-          }
+          if ($installers.Count -eq 0) { Write-Error 'Windows installer was not produced.' }
           foreach ($installer in $installers) {
-            if ($installer.Length -lt 1MB) {
-              Write-Error "Installer is unexpectedly small: $($installer.Name)"
-            }
+            if ($installer.Length -lt 1MB) { Write-Error "Installer is unexpectedly small: $($installer.Name)" }
             Write-Host "Installer: $($installer.FullName)"
             Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
           }
@@ -64,12 +60,10 @@ jobs:
         shell: pwsh
         run: |
           $ffmpeg = Get-ChildItem -Path release -Recurse -Filter ffmpeg.exe -File | Select-Object -First 1
-          if (-not $ffmpeg) {
-            Write-Error 'Packaged FFmpeg runtime binary was not found in the build output.'
-          }
-          if ($ffmpeg.Length -lt 1MB) {
-            Write-Error "Packaged FFmpeg binary is unexpectedly small: $($ffmpeg.Length) bytes"
-          }
+          if (-not $ffmpeg) { Write-Error 'Packaged FFmpeg runtime binary was not found in the build output.' }
+          if ($ffmpeg.Length -lt 1MB) { Write-Error "Packaged FFmpeg binary is unexpectedly small: $($ffmpeg.Length) bytes" }
+          & $ffmpeg.FullName -version | Select-Object -First 1
+          if ($LASTEXITCODE -ne 0) { Write-Error "Packaged FFmpeg failed to execute with code $LASTEXITCODE." }
           Write-Host "Packaged FFmpeg: $($ffmpeg.FullName)"
           Write-Host "Size: $([math]::Round($ffmpeg.Length / 1MB, 2)) MB"
 
@@ -82,21 +76,17 @@ jobs:
           New-Item -ItemType Directory -Path $installDir -Force | Out-Null
           Write-Host "Installing $($installer.Name) to $installDir"
           $installerProcess = Start-Process -FilePath $installer.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
-          if ($installerProcess.ExitCode -ne 0) {
-            Write-Error "Installer exited with code $($installerProcess.ExitCode)"
-          }
-          $appExe = Get-ChildItem -Path $installDir -Filter *.exe -File -Recurse |
-            Where-Object { $_.Name -notmatch 'uninstall' } |
-            Select-Object -First 1
-          if (-not $appExe) {
-            Write-Error 'Installed application executable was not found.'
-          }
+          if ($installerProcess.ExitCode -ne 0) { Write-Error "Installer exited with code $($installerProcess.ExitCode)" }
+          $appExe = Get-ChildItem -Path $installDir -Filter *.exe -File -Recurse | Where-Object { $_.Name -notmatch 'uninstall' -and $_.Name -notmatch 'ffmpeg' } | Select-Object -First 1
+          if (-not $appExe) { Write-Error 'Installed application executable was not found.' }
+          $installedFfmpeg = Join-Path $installDir 'resources\ffmpeg\ffmpeg.exe'
+          if (-not (Test-Path $installedFfmpeg)) { Write-Error "Installed FFmpeg runtime was not found: $installedFfmpeg" }
+          & $installedFfmpeg -version | Select-Object -First 1
+          if ($LASTEXITCODE -ne 0) { Write-Error "Installed FFmpeg failed to execute with code $LASTEXITCODE." }
           Write-Host "Launching $($appExe.FullName)"
           $appProcess = Start-Process -FilePath $appExe.FullName -PassThru
           Start-Sleep -Seconds 10
-          if ($appProcess.HasExited) {
-            Write-Error "Application exited during smoke test with code $($appProcess.ExitCode)."
-          }
+          if ($appProcess.HasExited) { Write-Error "Application exited during smoke test with code $($appProcess.ExitCode)." }
           Write-Host 'Application remained running for the smoke-test window.'
           Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
 
