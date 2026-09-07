@@ -4,7 +4,8 @@ export type Keyframe = { id: string; frame: number; property: string; value: Key
 export type TimelineTrack = { id: string; name: string; kind: LayerKind; visible: boolean; locked: boolean; keyframes: Keyframe[] };
 export type Scene = { id: string; name: string; width: number; height: number; fps: number; duration: number; tracks: TimelineTrack[] };
 export type Asset = { id: string; name: string; type: 'image' | 'audio' | 'video' | 'character' | 'background'; source: string; createdAt: string };
-export type StudioProject = { version: 1; name: string; activeSceneId: string; scenes: Scene[]; assets: Asset[]; createdAt: string; updatedAt: string };
+export type CharacterBinding = { assetId: string; rigId: string; boundAt: string };
+export type StudioProject = { version: 1; name: string; activeSceneId: string; scenes: Scene[]; assets: Asset[]; createdAt: string; updatedAt: string; activeCharacterBinding?: CharacterBinding };
 export const makeId=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 export function createDefaultScene():Scene{return{id:makeId('scene'),name:'Scene 01',width:1920,height:1080,fps:24,duration:240,tracks:[
 {id:makeId('track'),name:'Camera',kind:'scene',visible:true,locked:false,keyframes:[]},
