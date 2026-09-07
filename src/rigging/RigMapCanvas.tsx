@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { buildRigFromMap, CharacterRig } from './rigEngine';
-import { bindCharacterToRig } from '../character/characterBinding';
+import { bindCharacterToRig, loadBoundRig } from '../character/characterBinding';
+import { loadActiveCharacterAssetId } from '../character/characterReplacement';
 
 export type RigPoint={id:string;label:string;x:number;y:number;group:'body'|'face'|'mouth'|'hair'};
 export const initialPoints:RigPoint[]=[
@@ -12,10 +13,11 @@ const bones:[string,string][]=[['head','neck'],['neck','spine'],['spine','pelvis
 type Props={image?:string|null;onRigCreated?:(rig:CharacterRig)=>void};
 export default function RigMapCanvas({image,onRigCreated}:Props){
  const [points,setPoints]=useState(initialPoints),[selected,setSelected]=useState('head'),[activeGroup,setActiveGroup]=useState<RigPoint['group']|'all'>('all'),[status,setStatus]=useState('Ready for mapping');
+ useEffect(()=>{const restored=loadBoundRig();if(restored){onRigCreated?.(restored);setStatus(`Saved rig restored • ${restored.bones.length} bones`)}},[onRigCreated]);
  const visible=useMemo(()=>activeGroup==='all'?points:points.filter(p=>p.group===activeGroup),[points,activeGroup]);
  const movePoint=(id:string,e:React.PointerEvent<HTMLButtonElement>)=>{const stage=e.currentTarget.parentElement;if(!stage)return;const r=stage.getBoundingClientRect();const x=Math.max(2,Math.min(98,(e.clientX-r.left)/r.width*100));const y=Math.max(2,Math.min(98,(e.clientY-r.top)/r.height*100));setPoints(p=>p.map(q=>q.id===id?{...q,x,y}:q));setStatus('Map edited • unsaved')};
  const pointById=(id:string)=>points.find(p=>p.id===id)!;
- const createRig=()=>{const rig=buildRigFromMap(points);bindCharacterToRig('active-character',rig);onRigCreated?.(rig);setStatus(`Rig generated • ${rig.bones.length} bones • binding saved locally`)};
+ const createRig=()=>{const rig=buildRigFromMap(points);const assetId=loadActiveCharacterAssetId();if(assetId)bindCharacterToRig(assetId,rig);onRigCreated?.(rig);setStatus(assetId?`Rig generated • ${rig.bones.length} bones • character binding saved`:`Rig generated • ${rig.bones.length} bones • import a character to persist binding`)};
  return <section className="rig-map-panel"><header className="rig-map-header"><div><span className="eyebrow">CHARACTER / RIG MAP</span><h2>Automatic Rig Mapping</h2><p>Place controls on the imported character. Body, face and expression controls remain editable.</p></div><div className="rig-map-actions"><span className="image-state">{image?'● Character loaded':'○ Guide mode'}</span><button onClick={()=>{setPoints(initialPoints);setStatus('Map reset')}}>Reset Map</button><button className="primary" onClick={createRig}>Create Rig</button></div></header>
  <div className="rig-filter-row">{(['all','body','face','mouth','hair'] as const).map(g=><button key={g} className={activeGroup===g?'active':''} onClick={()=>setActiveGroup(g)}>{g==='all'?'All Points':g[0].toUpperCase()+g.slice(1)}</button>)}<span className="map-status">{points.length} controls • 16 bone joints • 2 eye anchors</span></div>
  <div className="rig-map-stage">{image?<img src={image} className="rig-character-image" alt="Imported character for rig mapping"/>:<div className="character-guide"><div className="guide-head"/><div className="guide-neck"/><div className="guide-torso"/><div className="guide-arm left"/><div className="guide-arm right"/><div className="guide-leg left"/><div className="guide-leg right"/><div className="guide-eye left"/><div className="guide-eye right"/><div className="guide-mouth"/></div>}<svg className="rig-bones" viewBox="0 0 100 100" preserveAspectRatio="none">{bones.map(([a,b])=>{const p1=pointById(a),p2=pointById(b);return <line key={a+b} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}/>})}</svg>{visible.map(p=><button key={p.id} className={`rig-point ${p.group} ${selected===p.id?'selected':''}`} style={{left:`${p.x}%`,top:`${p.y}%`}} onPointerDown={e=>{setSelected(p.id);e.currentTarget.setPointerCapture(e.pointerId)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))movePoint(p.id,e)}} title={p.label}><span/><b>{p.label}</b></button>)}<div className="stage-hint">DRAG CONTROLS • ALIGN TO CHARACTER • CREATE RIG</div></div>
