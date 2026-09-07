@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('mayaShadowDesktop', {
   checkForUpdate: () => ipcRenderer.invoke('studio:check-update'),
   downloadUpdate: () => ipcRenderer.invoke('studio:download-update'),
   installUpdate: () => ipcRenderer.invoke('studio:install-update'),
-  rendererReady: () => ipcRenderer.send('studio:renderer-ready'),
+  rendererReady: () => ipcRenderer.invoke('studio:renderer-ready'),
   saveProject: (payload) => ipcRenderer.invoke('studio:save-project', payload),
   loadProject: () => ipcRenderer.invoke('studio:load-project'),
   backupProject: (payload) => ipcRenderer.invoke('studio:backup-project', payload),
