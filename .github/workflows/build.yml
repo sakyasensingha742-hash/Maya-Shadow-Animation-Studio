@@ -55,6 +55,33 @@ jobs:
             Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
           }
 
+      - name: Smoke test installed application
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path release -Filter *.exe -File | Select-Object -First 1
+          $installDir = Join-Path $env:RUNNER_TEMP 'maya-shadow-smoke'
+          Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+          Write-Host "Installing $($installer.Name) to $installDir"
+          $installerProcess = Start-Process -FilePath $installer.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
+          if ($installerProcess.ExitCode -ne 0) {
+            Write-Error "Installer exited with code $($installerProcess.ExitCode)"
+          }
+          $appExe = Get-ChildItem -Path $installDir -Filter *.exe -File -Recurse |
+            Where-Object { $_.Name -notmatch 'uninstall' } |
+            Select-Object -First 1
+          if (-not $appExe) {
+            Write-Error 'Installed application executable was not found.'
+          }
+          Write-Host "Launching $($appExe.FullName)"
+          $appProcess = Start-Process -FilePath $appExe.FullName -PassThru
+          Start-Sleep -Seconds 10
+          if ($appProcess.HasExited) {
+            Write-Error "Application exited during smoke test with code $($appProcess.ExitCode)."
+          }
+          Write-Host 'Application remained running for the smoke-test window.'
+          Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
+
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
