@@ -18,18 +18,4 @@ Maya Shadow Animation Studio is being built as an all-in-one creative applicatio
 
 ## Development roadmap
 
-1. Studio shell and workspace architecture
-2. Character import and rig-map editor
-3. AI-assisted body-part detection and one-click rig generation
-4. Facial rig: sclera, iris, pupil, eyelids, eyelashes, highlights and brows
-5. Bone/deformer animation and reusable character rigs
-6. Drawing/background/asset tools
-7. Audio timeline and video editing
-8. AI-assisted generation tools
-9. Export, project management and production-ready performance
-
-## Current milestone
-
-**Milestone 01 — Professional Studio Shell**
-
-The first implementation establishes the application workspace before deeper animation systems are added.
+Beast-mode CI validation is active for the full production pipeline, including feature contracts, web build, Windows installer, FFmpeg runtime, installed-app smoke test, and the one-minute production demo artifact.
