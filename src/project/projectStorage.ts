@@ -1,4 +1,4 @@
-import type {StudioProject} from './projectModel';
+import type {LayerKind,StudioProject,TimelineTrack} from './projectModel';
 
 const DB='maya-shadow-studio';
 const STORE='snapshots';
@@ -6,15 +6,33 @@ const KEEP=5;
 
 type Snapshot={id:string;project:StudioProject;createdAt:string};
 
+const REQUIRED_TRACKS:Array<{name:string;kind:LayerKind}>=[
+ {name:'Camera',kind:'scene'},
+ {name:'Character',kind:'character'},
+ {name:'Face / Expressions',kind:'face'},
+ {name:'Rig Controls',kind:'rig'},
+ {name:'Audio',kind:'audio'},
+ {name:'Background',kind:'background'}
+];
+
+function makeTrack(kind:LayerKind,name:string):TimelineTrack{return{id:`track-${kind}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,name,kind,visible:true,locked:false,keyframes:[]}}
+function normalizeTracks(tracks:TimelineTrack[]|null|undefined):TimelineTrack[]{
+ const existing=Array.isArray(tracks)?tracks.filter(Boolean).map(t=>({...t,keyframes:Array.isArray(t.keyframes)?t.keyframes:[]})):[];
+ const normalized=[...existing];
+ for(const required of REQUIRED_TRACKS){if(!normalized.some(t=>t.kind===required.kind))normalized.push(makeTrack(required.kind,required.name));}
+ return normalized;
+}
+
 function openDb():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 
 export async function saveRecoverySnapshot(project:StudioProject){
  if(typeof indexedDB==='undefined')return;
  const db=await openDb();
- await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id:`snapshot-${Date.now()}`,project,createdAt:new Date().toISOString()});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
+ try{
+  await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id:`snapshot-${Date.now()}`,project,createdAt:new Date().toISOString()});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
+ }finally{db.close();}
  const all=await listRecoverySnapshots();
  for(const old of all.slice(KEEP)) await deleteRecoverySnapshot(old.id);
- db.close();
 }
 
 export async function listRecoverySnapshots():Promise<Snapshot[]>{
@@ -38,8 +56,8 @@ export function migrateProject(input:Partial<StudioProject>|null|undefined):Stud
  if(!input)return fresh;
  const merged={...fresh,...input};
  merged.version=1;
- merged.scenes=(input.scenes?.length?input.scenes:fresh.scenes).map(s=>({...s,tracks:s.tracks||[]}));
- merged.assets=input.assets||[];
+ merged.scenes=(input.scenes?.length?input.scenes:fresh.scenes).map(s=>({...s,tracks:normalizeTracks(s.tracks)}));
+ merged.assets=Array.isArray(input.assets)?input.assets:[];
  merged.activeSceneId=merged.scenes.some(s=>s.id===input.activeSceneId)?input.activeSceneId!:merged.scenes[0].id;
  if(input.activeCharacterBinding&&typeof input.activeCharacterBinding.assetId==='string'&&typeof input.activeCharacterBinding.rigId==='string')merged.activeCharacterBinding=input.activeCharacterBinding;else delete merged.activeCharacterBinding;
  return merged;
@@ -48,5 +66,5 @@ export function migrateProject(input:Partial<StudioProject>|null|undefined):Stud
 function structuredCloneSafe<T>(value:T):T{try{return structuredClone(value)}catch{return JSON.parse(JSON.stringify(value))}}
 function createFallback():StudioProject{
  const id=`scene-${Date.now()}`;
- return {version:1,name:'Untitled Project',activeSceneId:id,scenes:[{id,name:'Scene 01',width:1920,height:1080,fps:24,duration:240,tracks:[]}],assets:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+ return {version:1,name:'Untitled Project',activeSceneId:id,scenes:[{id,name:'Scene 01',width:1920,height:1080,fps:24,duration:240,tracks:normalizeTracks([])}],assets:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
