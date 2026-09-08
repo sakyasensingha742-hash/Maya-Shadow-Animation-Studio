@@ -25,8 +25,16 @@ function normalizeTracks(tracks:TimelineTrack[]|null|undefined):TimelineTrack[]{
 
 function openDb():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 
+/** Startup autosave can briefly run with the fresh fallback project before async recovery finishes. Never let that placeholder overwrite an existing recovery snapshot. */
+function isFreshFallback(project:StudioProject):boolean{
+ return project.name==='Untitled Project'&&project.assets.length===0&&project.scenes.length===1&&project.scenes[0]?.name==='Scene 01'&&project.scenes[0]?.tracks.length===REQUIRED_TRACKS.length&&project.scenes[0]?.duration===240;
+}
+
 export async function saveRecoverySnapshot(project:StudioProject){
  if(typeof indexedDB==='undefined')return;
+ if(isFreshFallback(project)){
+  try{const existing=await listRecoverySnapshots();if(existing.length)return;}catch{}
+ }
  const db=await openDb();
  try{
   await new Promise<void>((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id:`snapshot-${Date.now()}`,project,createdAt:new Date().toISOString()});tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
