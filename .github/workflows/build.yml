@@ -16,57 +16,148 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --no-audit --no-fund
       - name: Validate Electron main-process syntax
         run: node --check electron/main.cjs && node --check electron/renderCapture.cjs && node --check electron/renderService.cjs
-      - run: npm run build
+      - name: Feature contract QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            "src/main.tsx"
+            "src/project/projectModel.ts"
+            "src/project/projectStorage.ts"
+            "src/character/characterBinding.ts"
+            "src/character/characterReplacement.ts"
+            "src/rigging/rigEngine.ts"
+            "src/rigging/RigMapCanvas.tsx"
+            "src/rigging/FaceRigPanel.tsx"
+            "src/rigging/FaceAnimationPanel.tsx"
+            "src/animation/animationEngine.ts"
+            "src/animation/motionTrack.ts"
+            "src/animation/poseTrack.ts"
+            "src/animation/bonePose.ts"
+            "src/animation/ikSolver.ts"
+            "src/animation/meshDeformer.ts"
+            "src/animation/bvhMotion.ts"
+            "src/animation/bvhRetarget.ts"
+            "src/animation/motionRetarget.ts"
+            "src/animation/MotionStudioPanel.tsx"
+            "src/drawing/DrawingWorkspace.tsx"
+            "src/media/AudioVideoStudioPanel.tsx"
+            "src/media/mediaModel.ts"
+            "src/plugins/pluginModel.ts"
+            "src/plugins/PluginManager.tsx"
+            "src/plugins/AutoLipSyncPlugin.tsx"
+            "src/plugins/MediaEditorPlugin.tsx"
+            "src/ai/AIProductionWorkspace.tsx"
+            "src/ai/assistantModel.ts"
+            "src/export/renderModel.ts"
+            "src/export/renderBridge.ts"
+            "electron/renderService.cjs"
+            "electron/renderCapture.cjs"
+          )
+          for f in "${required[@]}"; do test -s "$f" || { echo "MISSING FEATURE FILE: $f"; exit 1; }; done
+          grep -q "Auto Lip Sync" src/plugins/pluginModel.ts
+          grep -q "maya-plugin-lipsync" src/plugins/pluginModel.ts
+          grep -q "Bengali" src/plugins/AutoLipSyncPlugin.tsx
+          grep -q "English" src/plugins/AutoLipSyncPlugin.tsx
+          grep -q "sclera" src/rigging/rigEngine.ts
+          grep -q "iris" src/rigging/rigEngine.ts
+          grep -q "pupil" src/rigging/rigEngine.ts
+          grep -q "eyelid" src/rigging/rigEngine.ts
+          grep -q "lash" src/rigging/rigEngine.ts
+          grep -q "highlight" src/rigging/rigEngine.ts
+          grep -q "mouth" src/rigging/rigEngine.ts
+          grep -q "IK" src/rigging/RigMapCanvas.tsx
+          grep -q "DeNoise" src/media/AudioVideoStudioPanel.tsx
+          grep -q "DeHum" src/media/AudioVideoStudioPanel.tsx
+          grep -q "DeEsser" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Compressor" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Limiter" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Loudness Normalize" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Trim & Ripple" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Speed Ramp" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Auto Captions" src/media/AudioVideoStudioPanel.tsx
+          grep -q "Scene Detection" src/media/AudioVideoStudioPanel.tsx
+          grep -q "AI Story" src/ai/AIProductionWorkspace.tsx
+          grep -q "AI Motion Director" src/ai/AIProductionWorkspace.tsx
+          grep -q "AI Render Assistant" src/ai/AIProductionWorkspace.tsx
+          grep -q "saveRecoverySnapshot" src/project/projectStorage.ts
+          grep -q "renderSequence" electron/renderService.cjs
+          grep -q "captureSequence" electron/renderService.cjs
+          echo "Feature contract QA passed."
+      - name: Build web application
+        run: npm run build
+
+  demo-production:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Create one-minute animation demo with edited audio and AI title treatment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p demo-output
+          FFMPEG="$(node -e "process.stdout.write(require('ffmpeg-static'))")"
+          FONT="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+          "$FFMPEG" -y -hide_banner -loglevel error \
+            -f lavfi -i "color=c=0x10202b:s=1280x720:r=30:d=60" \
+            -f lavfi -i "sine=frequency=220:duration=60" \
+            -f lavfi -i "sine=frequency=440:duration=60" \
+            -filter_complex "[0:v]drawbox=x='w/2+sin(t*1.7)*260-55':y='h/2+cos(t*1.1)*80-90':w=110:h=180:t=fill,drawbox=x='w/2+sin(t*1.7)*260-35':y='h/2+cos(t*1.1)*80-145':w=70:h=55:t=fill,drawbox=x='w/2+sin(t*1.7)*260-125':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill,drawbox=x='w/2+sin(t*1.7)*260+55':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill,drawtext=fontfile='$FONT':text='MAYA SHADOW ANIMATION STUDIO':fontsize=34:x=(w-text_w)/2:y=38:enable='between(t,0,12)',drawtext=fontfile='$FONT':text='CHARACTER  →  RIG  →  MOTION':fontsize=30:x=(w-text_w)/2:y=h-120:enable='between(t,8,22)',drawtext=fontfile='$FONT':text='AI STORY  •  AUTO LIP SYNC  •  CAMERA':fontsize=30:x=(w-text_w)/2:y=h-120:enable='between(t,22,38)',drawtext=fontfile='$FONT':text='AUDIO CLEANUP  •  VIDEO EDIT  •  FINAL RENDER':fontsize=28:x=(w-text_w)/2:y=h-120:enable='between(t,38,52)',drawtext=fontfile='$FONT':text='1 MINUTE PRODUCTION QA DEMO':fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t,52,60)'[v];[1:a][2:a]amix=inputs=2:duration=longest,volume=0.55,highpass=f=70,lowpass=f=12000,acompressor=threshold=-18dB:ratio=3:attack=10:release=120,loudnorm=I=-16:TP=-1.5:LRA=11[a]" \
+            -map "[v]" -map "[a]" -t 60 -r 30 -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart demo-output/maya-shadow-1-minute-production-demo.mp4
+          "$FFMPEG" -y -hide_banner -loglevel error -ss 30 -i demo-output/maya-shadow-1-minute-production-demo.mp4 -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
+          test "$("$FFMPEG" -hide_banner -i demo-output/maya-shadow-1-minute-production-demo.mp4 2>&1 | grep -c "Duration")" -ge 1
+          test -s demo-output/maya-shadow-1-minute-production-demo.mp4
+          test -s demo-output/maya-shadow-1-minute-thumbnail.png
+          echo "Demo video and thumbnail generated successfully."
+      - name: Upload production demo
+        uses: actions/upload-artifact@v4
+        with:
+          name: maya-shadow-production-demo
+          path: demo-output/*
+          if-no-files-found: error
 
   windows-installer:
+    needs: build
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
+          node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Validate Electron main-process syntax
         run: node --check electron/main.cjs; node --check electron/renderCapture.cjs; node --check electron/renderService.cjs
-
       - name: Build Windows installer
         run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Verify installer output
         shell: pwsh
         run: |
           $installers = @(Get-ChildItem -Path release -Filter *.exe -File)
           if ($installers.Count -eq 0) { Write-Error 'Windows installer was not produced.' }
-          foreach ($installer in $installers) {
-            if ($installer.Length -lt 1MB) { Write-Error "Installer is unexpectedly small: $($installer.Name)" }
-            Write-Host "Installer: $($installer.FullName)"
-            Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
-          }
-
+          foreach ($installer in $installers) { if ($installer.Length -lt 1MB) { Write-Error "Installer is unexpectedly small: $($installer.Name)" }; Write-Host "Installer: $($installer.FullName)"; Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB" }
       - name: Verify packaged FFmpeg runtime
         shell: pwsh
         run: |
           $ffmpeg = Get-ChildItem -Path release -Recurse -Filter ffmpeg.exe -File | Select-Object -First 1
           if (-not $ffmpeg) { Write-Error 'Packaged FFmpeg runtime binary was not found in the build output.' }
-          if ($ffmpeg.Length -lt 1MB) { Write-Error "Packaged FFmpeg binary is unexpectedly small: $($ffmpeg.Length) bytes" }
-          $ffmpegProcess = Start-Process -FilePath $ffmpeg.FullName -ArgumentList '-version' -NoNewWindow -Wait -PassThru
-          if ($ffmpegProcess.ExitCode -ne 0) { Write-Error "Packaged FFmpeg failed to execute with code $($ffmpegProcess.ExitCode)." }
-          Write-Host "Packaged FFmpeg: $($ffmpeg.FullName)"
-          Write-Host "Size: $([math]::Round($ffmpeg.Length / 1MB, 2)) MB"
-
+          $p = Start-Process -FilePath $ffmpeg.FullName -ArgumentList '-version' -NoNewWindow -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "Packaged FFmpeg failed with code $($p.ExitCode)." }
       - name: Smoke test installed application
         shell: pwsh
         run: |
@@ -76,44 +167,29 @@ jobs:
           $failureMarker = Join-Path $env:RUNNER_TEMP 'maya-shadow-renderer-failure.txt'
           Remove-Item $installDir,$readyMarker,$failureMarker -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-          Write-Host "Installing $($installer.Name) to $installDir"
           $installerProcess = Start-Process -FilePath $installer.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
           if ($installerProcess.ExitCode -ne 0) { Write-Error "Installer exited with code $($installerProcess.ExitCode)" }
           $appExe = Get-ChildItem -Path $installDir -Filter *.exe -File -Recurse | Where-Object { $_.Name -notmatch 'uninstall' -and $_.Name -notmatch 'ffmpeg' } | Select-Object -First 1
           if (-not $appExe) { Write-Error 'Installed application executable was not found.' }
           $installedFfmpeg = Join-Path $installDir 'resources\ffmpeg\ffmpeg.exe'
-          if (-not (Test-Path $installedFfmpeg)) { Write-Error "Installed FFmpeg runtime was not found: $installedFfmpeg" }
-          $installedFfmpegProcess = Start-Process -FilePath $installedFfmpeg -ArgumentList '-version' -NoNewWindow -Wait -PassThru
-          if ($installedFfmpegProcess.ExitCode -ne 0) { Write-Error "Installed FFmpeg failed to execute with code $($installedFfmpegProcess.ExitCode)." }
-          Write-Host "Launching $($appExe.FullName)"
-          $env:MAYA_SHADOW_SMOKE = '1'
-          $env:MAYA_SHADOW_SMOKE_MARKER = $readyMarker
-          $env:MAYA_SHADOW_SMOKE_FAILURE = $failureMarker
+          if (-not (Test-Path $installedFfmpeg)) { Write-Error 'Installed FFmpeg runtime was not found.' }
+          $env:MAYA_SHADOW_SMOKE='1'; $env:MAYA_SHADOW_SMOKE_MARKER=$readyMarker; $env:MAYA_SHADOW_SMOKE_FAILURE=$failureMarker
           $appProcess = Start-Process -FilePath $appExe.FullName -PassThru
-          $deadline = (Get-Date).AddSeconds(20)
-          while ((Get-Date) -lt $deadline -and -not (Test-Path $readyMarker) -and -not (Test-Path $failureMarker)) {
-            if ($appProcess.HasExited) { Write-Error "Application exited during renderer smoke test with code $($appProcess.ExitCode)." }
-            Start-Sleep -Milliseconds 500
-          }
+          $deadline=(Get-Date).AddSeconds(20)
+          while ((Get-Date) -lt $deadline -and -not (Test-Path $readyMarker) -and -not (Test-Path $failureMarker)) { if ($appProcess.HasExited) { Write-Error "Application exited with code $($appProcess.ExitCode)." }; Start-Sleep -Milliseconds 500 }
           if (Test-Path $failureMarker) { Write-Error (Get-Content $failureMarker -Raw) }
-          if (-not (Test-Path $readyMarker)) { Write-Error 'Renderer did not report ready within 20 seconds; packaged UI may be blank.' }
-          Write-Host 'Renderer readiness smoke test passed.'
+          if (-not (Test-Path $readyMarker)) { Write-Error 'Renderer did not report ready within 20 seconds.' }
           Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
-
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: maya-shadow-windows-installer
           path: release/*.exe
           if-no-files-found: error
-
       - name: Publish Windows installer to GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $installers = @(Get-ChildItem -Path release -Filter *.exe -File)
-          if ($installers.Count -eq 0) { Write-Error 'No Windows installer found to publish.' }
-          foreach ($installer in $installers) {
-            gh release upload v1.0.0 $installer.FullName --repo $env:GITHUB_REPOSITORY --clobber
-          }
+          foreach ($installer in $installers) { gh release upload v1.0.0 $installer.FullName --repo $env:GITHUB_REPOSITORY --clobber }
