@@ -50,20 +50,21 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p demo-output
-          FFMPEG="$(node -e "process.stdout.write(require('ffmpeg-static'))")"
-          test -f "$FFMPEG"
+          FFMPEG="$(command -v ffmpeg)"
+          test -x "$FFMPEG"
+          "$FFMPEG" -version | head -1
           VIDEO=demo-output/demo-video-only.mp4
           AUDIO=demo-output/demo-edited-audio.m4a
           FINAL=demo-output/maya-shadow-1-minute-production-demo.mp4
           "$FFMPEG" -y -hide_banner -loglevel error \
-            -f lavfi -i "color=c=0x10202b:s=1280x720:r=30:d=60" \
-            -vf "drawbox=x='w/2+sin(t*1.7)*260-55':y='h/2+cos(t*1.1)*80-90':w=110:h=180:t=fill,drawbox=x='w/2+sin(t*1.7)*260-35':y='h/2+cos(t*1.1)*80-145':w=70:h=55:t=fill,drawbox=x='w/2+sin(t*1.7)*260-125':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill,drawbox=x='w/2+sin(t*1.7)*260+55':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill" \
-            -t 60 -r 30 -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -an "$VIDEO"
+            -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=60" \
+            -vf "drawbox=x=80:y=80:w=1120:h=560:t=8,drawtext=text='MAYA SHADOW AI PRODUCTION':fontsize=52:x=(w-text_w)/2:y=55:enable='between(t,0,10)',drawtext=text='CHARACTER  -  MOTION  -  AUDIO  -  EDIT  -  RENDER':fontsize=28:x=(w-text_w)/2:y=h-70:enable='between(t,0,10)'" \
+            -an -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -t 60 "$VIDEO"
           "$FFMPEG" -y -hide_banner -loglevel error \
-            -f lavfi -i "sine=frequency=220:duration=60" \
-            -f lavfi -i "sine=frequency=440:duration=60" \
+            -f lavfi -i "sine=frequency=220:sample_rate=48000:duration=60" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=60" \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest,volume=0.55,highpass=f=70,lowpass=f=12000,acompressor=threshold=-18dB:ratio=3:attack=10:release=120,loudnorm=I=-16:TP=-1.5:LRA=11" \
-            -t 60 -c:a aac -b:a 192k "$AUDIO"
+            -c:a aac -b:a 192k -t 60 "$AUDIO"
           "$FFMPEG" -y -hide_banner -loglevel error \
             -i "$VIDEO" -i "$AUDIO" -map 0:v:0 -map 1:a:0 -t 60 \
             -c:v copy -c:a copy -movflags +faststart "$FINAL"
@@ -74,7 +75,7 @@ jobs:
           test -n "$duration"
           "$FFMPEG" -v error -i "$FINAL" -f null -
           echo "Demo duration: $duration"
-          echo "Demo video, edited audio, thumbnail and integrity check passed."
+          echo "Demo video, edited audio, AI title treatment, thumbnail and integrity check passed."
       - name: Upload production demo
         uses: actions/upload-artifact@v4
         with:
