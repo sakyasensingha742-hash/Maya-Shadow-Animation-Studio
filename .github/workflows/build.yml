@@ -52,22 +52,29 @@ jobs:
           mkdir -p demo-output
           FFMPEG="$(node -e "process.stdout.write(require('ffmpeg-static'))")"
           test -f "$FFMPEG"
-          "$FFMPEG" -y -hide_banner -loglevel warning \
+          VIDEO=demo-output/demo-video-only.mp4
+          AUDIO=demo-output/demo-edited-audio.m4a
+          FINAL=demo-output/maya-shadow-1-minute-production-demo.mp4
+          "$FFMPEG" -y -hide_banner -loglevel error \
             -f lavfi -i "color=c=0x10202b:s=1280x720:r=30:d=60" \
+            -vf "drawbox=x='w/2+sin(t*1.7)*260-55':y='h/2+cos(t*1.1)*80-90':w=110:h=180:t=fill,drawbox=x='w/2+sin(t*1.7)*260-35':y='h/2+cos(t*1.1)*80-145':w=70:h=55:t=fill,drawbox=x='w/2+sin(t*1.7)*260-125':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill,drawbox=x='w/2+sin(t*1.7)*260+55':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill" \
+            -t 60 -r 30 -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -an "$VIDEO"
+          "$FFMPEG" -y -hide_banner -loglevel error \
             -f lavfi -i "sine=frequency=220:duration=60" \
             -f lavfi -i "sine=frequency=440:duration=60" \
-            -vf "drawbox=x='w/2+sin(t*1.7)*260-55':y='h/2+cos(t*1.1)*80-90':w=110:h=180:t=fill,drawbox=x='w/2+sin(t*1.7)*260-35':y='h/2+cos(t*1.1)*80-145':w=70:h=55:t=fill,drawbox=x='w/2+sin(t*1.7)*260-125':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill,drawbox=x='w/2+sin(t*1.7)*260+55':y='h/2+cos(t*1.1)*80-20':w=70:h=22:t=fill" \
-            -map 0:v:0 -map 1:a:0 -map 2:a:0 \
-            -filter_complex "[1:a][2:a]amix=inputs=2:duration=longest,volume=0.55,highpass=f=70,lowpass=f=12000,acompressor=threshold=-18dB:ratio=3:attack=10:release=120,loudnorm=I=-16:TP=-1.5:LRA=11[a]" \
-            -map "[a]" -t 60 -r 30 -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart demo-output/maya-shadow-1-minute-production-demo.mp4
-          test -s demo-output/maya-shadow-1-minute-production-demo.mp4
-          "$FFMPEG" -y -hide_banner -loglevel error -ss 30 -i demo-output/maya-shadow-1-minute-production-demo.mp4 -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
+            -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest,volume=0.55,highpass=f=70,lowpass=f=12000,acompressor=threshold=-18dB:ratio=3:attack=10:release=120,loudnorm=I=-16:TP=-1.5:LRA=11" \
+            -t 60 -c:a aac -b:a 192k "$AUDIO"
+          "$FFMPEG" -y -hide_banner -loglevel error \
+            -i "$VIDEO" -i "$AUDIO" -map 0:v:0 -map 1:a:0 -t 60 \
+            -c:v copy -c:a copy -movflags +faststart "$FINAL"
+          test -s "$FINAL"
+          "$FFMPEG" -y -hide_banner -loglevel error -ss 30 -i "$FINAL" -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
           test -s demo-output/maya-shadow-1-minute-thumbnail.png
-          duration="$($FFMPEG -hide_banner -i demo-output/maya-shadow-1-minute-production-demo.mp4 2>&1 | sed -n 's/.*Duration: \([^,]*\),.*/\1/p' | head -1)"
+          duration="$($FFMPEG -hide_banner -i "$FINAL" 2>&1 | sed -n 's/.*Duration: \([^,]*\),.*/\1/p' | head -1)"
           test -n "$duration"
-          "$FFMPEG" -v error -i demo-output/maya-shadow-1-minute-production-demo.mp4 -f null -
+          "$FFMPEG" -v error -i "$FINAL" -f null -
           echo "Demo duration: $duration"
-          echo "Demo video and thumbnail generated successfully."
+          echo "Demo video, edited audio, thumbnail and integrity check passed."
       - name: Upload production demo
         uses: actions/upload-artifact@v4
         with:
