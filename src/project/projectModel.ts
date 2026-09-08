@@ -12,9 +12,15 @@ export const DEFAULT_SCENE_WIDTH = 1920;
 export const DEFAULT_SCENE_HEIGHT = 1080;
 export const DEFAULT_SCENE_FPS = 24;
 export const DEFAULT_SCENE_DURATION = 240;
+export const DEFAULT_SCENE = {
+  sceneWidth: DEFAULT_SCENE_WIDTH,
+  sceneHeight: DEFAULT_SCENE_HEIGHT,
+  fps: DEFAULT_SCENE_FPS,
+  duration: DEFAULT_SCENE_DURATION,
+};
 
 export const makeId=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-export function createDefaultScene():Scene{return{id:makeId('scene'),name:'Scene 01',width:DEFAULT_SCENE_WIDTH,height:DEFAULT_SCENE_HEIGHT,fps:DEFAULT_SCENE_FPS,duration:DEFAULT_SCENE_DURATION,tracks:[
+export function createDefaultScene():Scene{return{id:makeId('scene'),name:'Scene 01',width:DEFAULT_SCENE.sceneWidth,height:DEFAULT_SCENE.sceneHeight,fps:DEFAULT_SCENE.fps,duration:DEFAULT_SCENE.duration,tracks:[
 {id:makeId('track'),name:'Camera',kind:'scene',visible:true,locked:false,keyframes:[]},
 {id:makeId('track'),name:'Character',kind:'character',visible:true,locked:false,keyframes:[]},
 {id:makeId('track'),name:'Face / Expressions',kind:'face',visible:true,locked:false,keyframes:[]},
