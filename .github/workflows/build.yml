@@ -73,30 +73,39 @@ jobs:
           set -euo pipefail
           mkdir -p demo-output
           FFMPEG="$(command -v ffmpeg)"
-          test -x "$FFMPEG"
+          test -x "$FFMPEG" || { echo "FFmpeg executable not found: $FFMPEG"; exit 1; }
           "$FFMPEG" -version | head -1
           VIDEO=demo-output/demo-video-only.mp4
           AUDIO=demo-output/demo-edited-audio.m4a
           FINAL=demo-output/maya-shadow-1-minute-production-demo.mp4
-          "$FFMPEG" -y -hide_banner -loglevel warning \
-            -f lavfi -i "testsrc2=size=1280x720:rate=30:duration=60" \
-            -vf "drawbox=x=80:y=80:w=1120:h=560:t=8,drawbox=x=180:y=170:w=920:h=110:t=fill:enable='between(t,0,10)',drawbox=x=300:y=520:w=680:h=55:t=fill:enable='between(t,0,10)'" \
+          echo "[1/6] Rendering 60s video..."
+          "$FFMPEG" -y -hide_banner -loglevel error \
+            -f lavfi -i "color=c=black:s=1280x720:r=30" \
+            -vf "drawbox=x=80:y=80:w=1120:h=560:t=8,drawbox=x=180:y=170:w=920:h=110:t=fill:enable='lt(t,10)',drawbox=x=300:y=520:w=680:h=55:t=fill:enable='lt(t,10)'" \
             -an -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -t 60 "$VIDEO"
           test -s "$VIDEO"
-          "$FFMPEG" -y -hide_banner -loglevel warning \
-            -f lavfi -i "sine=frequency=220:sample_rate=48000:duration=60" \
-            -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=60" \
+          echo "[2/6] Rendering edited audio..."
+          "$FFMPEG" -y -hide_banner -loglevel error \
+            -f lavfi -i "sine=frequency=220:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=440:sample_rate=48000" \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest,volume=0.55,highpass=f=70,lowpass=f=12000,acompressor=threshold=-18dB:ratio=3:attack=10:release=120" \
             -c:a aac -b:a 192k -t 60 "$AUDIO"
           test -s "$AUDIO"
-          "$FFMPEG" -y -hide_banner -loglevel warning \
+          echo "[3/6] Muxing final MP4..."
+          "$FFMPEG" -y -hide_banner -loglevel error \
             -i "$VIDEO" -i "$AUDIO" -map 0:v:0 -map 1:a:0 -t 60 \
             -c:v copy -c:a copy -movflags +faststart "$FINAL"
           test -s "$FINAL"
-          "$FFMPEG" -y -hide_banner -loglevel warning -ss 30 -i "$FINAL" -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
+          echo "[4/6] Creating thumbnail..."
+          "$FFMPEG" -y -hide_banner -loglevel error -ss 30 -i "$FINAL" -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
           test -s demo-output/maya-shadow-1-minute-thumbnail.png
+          echo "[5/6] Checking duration and streams..."
           duration="$($FFMPEG -hide_banner -i "$FINAL" 2>&1 | sed -n 's/.*Duration: \([^,]*\),.*/\1/p' | head -1)"
           test -n "$duration"
+          streams="$($FFMPEG -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
+          echo "$streams" | grep -q '^video$'
+          echo "$streams" | grep -q '^audio$'
+          echo "[6/6] FFmpeg integrity decode..."
           "$FFMPEG" -v error -i "$FINAL" -f null -
           echo "Demo duration: $duration"
           echo "Demo video, edited audio, AI visual title treatment, thumbnail and integrity check passed."
