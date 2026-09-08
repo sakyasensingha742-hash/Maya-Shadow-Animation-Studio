@@ -19,3 +19,7 @@ Maya Shadow Animation Studio is being built as an all-in-one creative applicatio
 ## Development roadmap
 
 Beast-mode CI validation is active for the full production pipeline, including feature contracts, web build, Windows installer, FFmpeg runtime, installed-app smoke test, and the one-minute production demo artifact.
+
+## QA gate
+
+Every main-branch production change must pass the automated feature contract, micro source QA, application build, production-demo render/integrity checks, packaged FFmpeg verification, Windows installer verification, and installed-app smoke test before release certification.
