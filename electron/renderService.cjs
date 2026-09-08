@@ -55,7 +55,12 @@ function buildArgs({ inputPattern, outputPath, fps, format, quality, transparent
 
 function removePath(target) { try { fs.rmSync(target, { recursive: true, force: true }); } catch {} }
 function removeTempDir(dir) { removePath(dir); }
-function createSiblingTempPath(targetPath, label = 'rendering') { const absolute = path.resolve(targetPath); return path.join(path.dirname(absolute), `.${path.basename(absolute)}.${label}-${Date.now()}-${process.pid}`); }
+function createSiblingTempPath(targetPath, label = 'rendering') {
+  const absolute = path.resolve(targetPath);
+  const ext = path.extname(absolute);
+  const base = ext ? path.basename(absolute, ext) : path.basename(absolute);
+  return path.join(path.dirname(absolute), `.${base}.${label}-${Date.now()}-${process.pid}${ext}`);
+}
 function commitFileOutput(tempPath, outputPath) { if (!fs.existsSync(tempPath)) throw new Error('Render completed without producing an output file.'); removePath(outputPath); fs.renameSync(tempPath, outputPath); }
 function commitDirectoryOutput(tempDir, outputDir) { if (!fs.existsSync(tempDir)) throw new Error('Render completed without producing an output directory.'); removePath(outputDir); fs.renameSync(tempDir, outputDir); }
 
