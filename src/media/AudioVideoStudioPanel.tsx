@@ -3,17 +3,18 @@ import {Asset} from '../project/projectModel';
 import './audioVideoStudio.css';
 
 type Props={assets:Asset[];onImport:()=>void;onStatus:(message:string)=>void};
+type MediaAsset=Asset & {type:'audio'|'video'};
 const audioEffects=['DeNoise','Noise Gate','DeHum 50/60Hz','DeEsser','Parametric EQ','Compressor','Limiter','Loudness Normalize','DeReverb','Voice Clarity','Room Tone Repair','Silence Trim'];
 const videoTools=['Trim & Ripple','Cut / Split','Speed Ramp','Freeze Frame','Crop / Pan / Zoom','Color Correction','Audio Ducking','Scene Detection','Auto Captions','Shot Stabilizer','Motion Blur','Transitions'];
 
 export default function AudioVideoStudioPanel({assets,onImport,onStatus}:Props){
- const media=useMemo(()=>assets.filter(a=>a.type==='audio'||a.type==='video'),[assets]);
+ const media=useMemo<MediaAsset[]>(()=>assets.filter((a):a is MediaAsset=>a.type==='audio'||a.type==='video'),[assets]);
  const [selectedId,setSelectedId]=useState(media[0]?.id||'');
  const selected=media.find(a=>a.id===selectedId);
  const [mode,setMode]=useState<'audio'|'video'>(selected?.type==='video'?'video':'audio');
  const [gain,setGain]=useState(0),[speed,setSpeed]=useState(1),[trimStart,setTrimStart]=useState(0),[trimEnd,setTrimEnd]=useState(100),[activeEffects,setActiveEffects]=useState<string[]>([]);
  const audioRef=useRef<HTMLAudioElement>(null);const videoRef=useRef<HTMLVideoElement>(null);
- const select=(a:Asset)=>{setSelectedId(a.id);setMode(a.type);onStatus(`${a.type==='audio'?'Audio':'Video'} clip selected: ${a.name}`)};
+ const select=(a:MediaAsset)=>{setSelectedId(a.id);setMode(a.type);onStatus(`${a.type==='audio'?'Audio':'Video'} clip selected: ${a.name}`)};
  const toggleEffect=(effect:string)=>setActiveEffects(v=>v.includes(effect)?v.filter(x=>x!==effect):[...v,effect]);
  const preview=()=>{if(mode==='audio'&&audioRef.current){audioRef.current.volume=Math.min(1,Math.max(0,Math.pow(10,gain/20)));void audioRef.current.play()}else if(videoRef.current){videoRef.current.playbackRate=speed;void videoRef.current.play()}};
  return <div className="av-studio">
