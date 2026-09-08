@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -106,3 +106,14 @@ jobs:
           name: maya-shadow-windows-installer
           path: release/*.exe
           if-no-files-found: error
+
+      - name: Publish Windows installer to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $installers = @(Get-ChildItem -Path release -Filter *.exe -File)
+          if ($installers.Count -eq 0) { Write-Error 'No Windows installer found to publish.' }
+          foreach ($installer in $installers) {
+            gh release upload v1.0.0 $installer.FullName --repo $env:GITHUB_REPOSITORY --clobber
+          }
