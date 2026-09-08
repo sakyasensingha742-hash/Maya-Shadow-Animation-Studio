@@ -1,0 +1,41 @@
+name: Integrate Media AI Workspaces
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch studio shell
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('src/main.tsx')
+          s=p.read_text(encoding='utf-8')
+          if "AIProductionWorkspace" in s:
+              print('Media/AI integration already present')
+              raise SystemExit(0)
+          s=s.replace("import {StudioPreset} from './presets/presetModel';", "import {StudioPreset} from './presets/presetModel';\nimport AudioVideoStudioPanel from './media/AudioVideoStudioPanel';\nimport AIProductionWorkspace from './ai/AIProductionWorkspace';")
+          s=s.replace("const tools=[['V','Select'],['B','Brush'],['P','Pen'],['E','Eraser'],['T','Text'],['M','Move'],['R','Rectangle'],['O','Ellipse']];const workspaces=['Animation','Character','Background','Presets','Audio/Video','Drawing'];", "const tools=[['V','Select'],['B','Brush'],['P','Pen'],['E','Eraser'],['T','Text'],['M','Move'],['R','Rectangle'],['O','Ellipse']];const workspaces=['Animation','Character','Background','Presets','Audio/Video','AI','Drawing'];")
+          s=s.replace("<button className=\"wide\" onClick={()=>setWorkspace('Drawing')}>✎ Drawing Studio</button>", "<button className=\"wide\" onClick={()=>setWorkspace('Audio/Video')}>🎚 Professional Audio / Video</button><button className=\"wide\" onClick={()=>setWorkspace('AI')}>🧠 AI Production Center</button><button className=\"wide\" onClick={()=>setWorkspace('Drawing')}>✎ Drawing Studio</button>")
+          pattern=r"workspace==='Audio/Video'\?<div className=\"asset-workspace\">.*?</div>:<div className=\"stage-wrap\">"
+          replacement="workspace==='Audio/Video'?<AudioVideoStudioPanel assets={assets} onImport={()=>mediaRef.current?.click()} onStatus={setStatus}/>:workspace==='AI'?<AIProductionWorkspace onWorkspaceChange={setWorkspace} onPreview={()=>setPlaying(true)} onStatus={setStatus}/>:<div className=\"stage-wrap\">"
+          s,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('Could not locate Audio/Video workspace block')
+          p.write_text(s,encoding='utf-8')
+      - name: Verify source integration
+        run: |
+          grep -q "AudioVideoStudioPanel" src/main.tsx
+          grep -q "AIProductionWorkspace" src/main.tsx
+      - name: Commit integration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.tsx .github/workflows/apply-media-ai-integration.yml
+          git commit -m "Integrate professional media and AI workspaces"
+          git push
