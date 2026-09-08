@@ -6,8 +6,15 @@ export type Scene = { id: string; name: string; width: number; height: number; f
 export type Asset = { id: string; name: string; type: 'image' | 'audio' | 'video' | 'character' | 'background'; source: string; createdAt: string };
 export type CharacterBinding = { assetId: string; rigId: string; boundAt: string };
 export type StudioProject = { version: 1; name: string; activeSceneId: string; scenes: Scene[]; assets: Asset[]; createdAt: string; updatedAt: string; activeCharacterBinding?: CharacterBinding };
+
+// Public project defaults used by the editor, renderer and QA contracts.
+export const DEFAULT_SCENE_WIDTH = 1920;
+export const DEFAULT_SCENE_HEIGHT = 1080;
+export const DEFAULT_SCENE_FPS = 24;
+export const DEFAULT_SCENE_DURATION = 240;
+
 export const makeId=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-export function createDefaultScene():Scene{return{id:makeId('scene'),name:'Scene 01',width:1920,height:1080,fps:24,duration:240,tracks:[
+export function createDefaultScene():Scene{return{id:makeId('scene'),name:'Scene 01',width:DEFAULT_SCENE_WIDTH,height:DEFAULT_SCENE_HEIGHT,fps:DEFAULT_SCENE_FPS,duration:DEFAULT_SCENE_DURATION,tracks:[
 {id:makeId('track'),name:'Camera',kind:'scene',visible:true,locked:false,keyframes:[]},
 {id:makeId('track'),name:'Character',kind:'character',visible:true,locked:false,keyframes:[]},
 {id:makeId('track'),name:'Face / Expressions',kind:'face',visible:true,locked:false,keyframes:[]},
