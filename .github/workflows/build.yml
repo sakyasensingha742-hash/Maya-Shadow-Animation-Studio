@@ -74,7 +74,7 @@ jobs:
           mkdir -p demo-output
           FFMPEG="$(command -v ffmpeg)"
           test -x "$FFMPEG" || { echo "FFmpeg executable not found: $FFMPEG"; exit 1; }
-          "$FFMPEG" -version | head -1
+          "$FFMPEG" -version
           VIDEO=demo-output/demo-video-only.mp4
           AUDIO=demo-output/demo-edited-audio.m4a
           FINAL=demo-output/maya-shadow-1-minute-production-demo.mp4
