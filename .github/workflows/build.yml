@@ -100,7 +100,9 @@ jobs:
           "$FFMPEG" -y -hide_banner -loglevel error -ss 30 -i "$FINAL" -frames:v 1 -vf "scale=1280:720" demo-output/maya-shadow-1-minute-thumbnail.png
           test -s demo-output/maya-shadow-1-minute-thumbnail.png
           echo "[5/6] Checking duration and streams..."
-          duration="$($FFMPEG -hide_banner -i "$FINAL" 2>&1 | sed -n 's/.*Duration: \([^,]*\),.*/\1/p' | head -1)"
+          PROBE=demo-output/duration-probe.txt
+          "$FFMPEG" -hide_banner -i "$FINAL" >"$PROBE" 2>&1 || true
+          duration="$(sed -n 's/.*Duration: \([^,]*\),.*/\1/p' "$PROBE" | sed -n '1p')"
           test -n "$duration"
           streams="$($FFMPEG -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
           echo "$streams" | grep -q '^video$'
