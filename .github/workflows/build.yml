@@ -104,7 +104,9 @@ jobs:
           "$FFMPEG" -hide_banner -i "$FINAL" >"$PROBE" 2>&1 || true
           duration="$(sed -n 's/.*Duration: \([^,]*\),.*/\1/p' "$PROBE" | sed -n '1p')"
           test -n "$duration"
-          streams="$($FFMPEG -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
+          FFPROBE="$(command -v ffprobe)"
+          test -x "$FFPROBE" || { echo "ffprobe executable not found: $FFPROBE"; exit 1; }
+          streams="$($FFPROBE -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
           echo "$streams" | grep -q '^video$'
           echo "$streams" | grep -q '^audio$'
           echo "[6/6] FFmpeg integrity decode..."
