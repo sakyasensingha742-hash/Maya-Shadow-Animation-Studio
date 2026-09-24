@@ -101,13 +101,12 @@ jobs:
           test -s demo-output/maya-shadow-1-minute-thumbnail.png
           echo "[5/6] Checking duration and streams..."
           PROBE=demo-output/duration-probe.txt
+          FFPROBE="$(command -v ffprobe)"
+          test -x "$FFPROBE" || { echo "ffprobe executable not found: $FFPROBE"; exit 1; }
           "$FFMPEG" -hide_banner -i "$FINAL" >"$PROBE" 2>&1 || true
           duration="$($FFPROBE -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$FINAL")"
           test -n "$duration"
           awk -v d="$duration" 'BEGIN { exit !(d >= 59.5 && d <= 60.5) }'
-          test -n "$duration"
-          FFPROBE="$(command -v ffprobe)"
-          test -x "$FFPROBE" || { echo "ffprobe executable not found: $FFPROBE"; exit 1; }
           streams="$($FFPROBE -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
           echo "$streams" | grep -q '^video$'
           echo "$streams" | grep -q '^audio$'
