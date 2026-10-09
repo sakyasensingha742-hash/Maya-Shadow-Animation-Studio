@@ -122,3 +122,7 @@ jobs:
             release/*.blockmap
           generate_release_notes: true
           overwrite_files: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
