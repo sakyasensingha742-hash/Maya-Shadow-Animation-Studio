@@ -23,6 +23,19 @@ jobs:
         with:
           node-version: 22
 
+      - name: Verify release tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          $tagVersion = $env:RELEASE_REF -replace '^refs/tags/v', ''
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($tagVersion -ne $package.version) {
+            Write-Error "Release tag v$tagVersion does not match package.json version $($package.version). Refusing to publish a mismatched installer."
+          }
+          Write-Host "Release tag and package version match: $tagVersion"
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
