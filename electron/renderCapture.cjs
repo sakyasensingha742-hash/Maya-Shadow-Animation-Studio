@@ -9,6 +9,7 @@ async function requestFrame(webContents, frame, requestId) {
     if(typeof window.__mayaShadowRequestFrame==='function'){
       window.__mayaShadowRequestFrame(payload);
     }else{
+      window.dispatchEvent(new CustomEvent('maya-shadow:render-frame-request',{detail:payload}));
       const ranges=[...document.querySelectorAll('input[type="range"]')].filter(el=>{
         const min=Number(el.min||0),max=Number(el.max||0);
         return max>=payload.frame&&min<=payload.frame;
@@ -63,7 +64,8 @@ async function prepareRenderViewport(webContents, width, height) {
 
   if (state.fullscreen) win.setFullScreen(false);
   if (state.maximized) win.unmaximize();
-  win.hide();
+  // Keep the main window visible while rendering so the user can see progress.
+  // Hiding the only BrowserWindow makes the desktop app appear to have exited.
   win.setContentSize(targetWidth, targetHeight, false);
 
   const styleText = [
@@ -95,7 +97,7 @@ async function captureFrame(webContents, frame, requestId, outputPath, width, he
   await waitForRendererReady(webContents, requestId);
   const targetWidth = Math.max(1, Math.round(Number(width) || 1920));
   const targetHeight = Math.max(1, Math.round(Number(height) || 1080));
-  const image = await webContents.capturePage({ x: 0, y: 0, width: targetWidth, height: targetHeight }, { stayHidden: true });
+  const image = await webContents.capturePage({ x: 0, y: 0, width: targetWidth, height: targetHeight }, { stayHidden: false });
   const size = image.getSize();
   const bitmap = size.width === targetWidth && size.height === targetHeight
     ? image
