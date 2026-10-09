@@ -40,3 +40,7 @@ jobs:
           git diff --cached --quiet && echo "No integration changes needed" && exit 0
           git commit -m "Integrate professional media and AI workspaces"
           git push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
