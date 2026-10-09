@@ -59,6 +59,25 @@ jobs:
             Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
           }
 
+      - name: Verify updater metadata
+        shell: pwsh
+        run: |
+          $metadata = Join-Path (Get-Location) 'release/latest.yml'
+          if (-not (Test-Path $metadata -PathType Leaf)) {
+            Write-Error 'electron-builder did not produce release/latest.yml; refusing to publish an incomplete updater release.'
+          }
+          $metadataText = Get-Content $metadata -Raw
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($metadataText -notmatch ("(?m)^version:\s*['\""]?" + [regex]::Escape($package.version) + "['\""]?\s*$")) {
+            Write-Error "latest.yml version does not match package.json version $($package.version)."
+          }
+          $blockmaps = @(Get-ChildItem -Path release -Filter *.blockmap -File)
+          if ($blockmaps.Count -eq 0) {
+            Write-Error 'electron-builder did not produce a .blockmap file; refusing to publish incomplete updater assets.'
+          }
+          Write-Host "Updater metadata verified for version $($package.version)."
+          Write-Host "Blockmap files: $($blockmaps.Count)"
+
       - name: Smoke test installed application
         shell: pwsh
         run: |
@@ -97,5 +116,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.exe
+          files: |
+            release/*.exe
+            release/latest.yml
+            release/*.blockmap
           generate_release_notes: true
