@@ -73,6 +73,25 @@ jobs:
           $p = Start-Process -FilePath $ffmpeg.FullName -ArgumentList '-version' -NoNewWindow -Wait -PassThru
           if ($p.ExitCode -ne 0) { Write-Error "Packaged FFmpeg failed with code $($p.ExitCode)." }
 
+      - name: Verify updater metadata
+        shell: pwsh
+        run: |
+          $metadata = Join-Path (Get-Location) 'release/latest.yml'
+          if (-not (Test-Path $metadata -PathType Leaf)) {
+            Write-Error 'electron-builder did not produce release/latest.yml; refusing to publish an incomplete updater release.'
+          }
+          $metadataText = Get-Content $metadata -Raw
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($metadataText -notmatch ("(?m)^version:\s*" + [regex]::Escape($package.version) + "\s*$")) {
+            Write-Error "latest.yml version does not match package.json version $($package.version)."
+          }
+          $blockmaps = @(Get-ChildItem -Path release -Filter *.blockmap -File)
+          if ($blockmaps.Count -eq 0) {
+            Write-Error 'electron-builder did not produce a .blockmap file; refusing to publish incomplete updater assets.'
+          }
+          Write-Host "Updater metadata verified for version $($package.version)."
+          Write-Host "Blockmap files: $($blockmaps.Count)"
+
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
         with:
