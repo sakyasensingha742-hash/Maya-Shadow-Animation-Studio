@@ -110,8 +110,8 @@ jobs:
           test -n "$duration"
           awk -v d="$duration" 'BEGIN { exit !(d >= 59.5 && d <= 60.5) }'
           streams="$($FFPROBE -v error -i "$FINAL" -show_entries stream=codec_type -of csv=p=0 2>/dev/null | sort -u)"
-          echo "$streams" | grep -q '^video$'
-          echo "$streams" | grep -q '^audio$'
+          echo "$streams" | grep -q '^video
+          echo "$streams" | grep -q '^audio
           echo "[6/6] FFmpeg integrity decode..."
           "$FFMPEG" -v error -i "$FINAL" -f null -
           echo "Demo duration: $duration"
@@ -183,3 +183,7 @@ jobs:
           name: maya-shadow-windows-installer
           path: release/*.exe
           if-no-files-found: error
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
