@@ -68,7 +68,7 @@ jobs:
           }
           $metadataText = Get-Content $metadata -Raw
           $package = Get-Content package.json -Raw | ConvertFrom-Json
-          if ($metadataText -notmatch ("(?m)^version:\s*['\""]?" + [regex]::Escape($package.version) + "['\""]?\s*$")) {
+          if ($metadataText -notmatch ("(?m)^version:\s*" + [regex]::Escape($package.version) + "\s*$")) {
             Write-Error "latest.yml version does not match package.json version $($package.version)."
           }
           $blockmaps = @(Get-ChildItem -Path release -Filter *.blockmap -File)
