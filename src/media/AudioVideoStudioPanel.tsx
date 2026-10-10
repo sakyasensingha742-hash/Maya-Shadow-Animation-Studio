@@ -1,4 +1,4 @@
-import React,{useMemo,useRef,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Asset} from '../project/projectModel';
 import './audioVideoStudio.css';
 
@@ -10,7 +10,14 @@ const videoTools=['Trim & Ripple','Cut / Split','Speed Ramp','Freeze Frame','Cro
 export default function AudioVideoStudioPanel({assets,onImport,onStatus}:Props){
  const media=useMemo<MediaAsset[]>(()=>assets.filter((a):a is MediaAsset=>a.type==='audio'||a.type==='video'),[assets]);
  const [selectedId,setSelectedId]=useState(media[0]?.id||'');
+ const [selectedTrack,setSelectedTrack]=useState('Dialogue / VO');
+ const [trackAssignments,setTrackAssignments]=useState<Record<string,string>>({});
+ const tracks=['Dialogue / VO','Music','SFX / Ambience','Video','Captions'];
  const selected=media.find(a=>a.id===selectedId);
+ useEffect(()=>{if(!media.length){setSelectedId('');return}if(!media.some(a=>a.id===selectedId))setSelectedId(media[0].id)},[media,selectedId]);
+ useEffect(()=>{setTrackAssignments(current=>{const next={...current};for(const a of media){if(Object.values(next).includes(a.id))continue;const target=a.type==='video'?'Video':!next['Dialogue / VO']?'Dialogue / VO':!next['Music']?'Music':!next['SFX / Ambience']?'SFX / Ambience':'Dialogue / VO';if(!next[target])next[target]=a.id}return next})},[media]);
+ const assignSelected=(track:string)=>{if(!selected){onStatus('আগে Media Bin থেকে একটি audio/video clip নির্বাচন করুন');return}setTrackAssignments(current=>({...current,[track]:selected.id}));setSelectedTrack(track);onStatus(`${selected.name} → ${track} track-এ যোগ করা হয়েছে`)};
+
  const [mode,setMode]=useState<'audio'|'video'>(selected?.type==='video'?'video':'audio');
  const [gain,setGain]=useState(0),[speed,setSpeed]=useState(1),[trimStart,setTrimStart]=useState(0),[trimEnd,setTrimEnd]=useState(100),[activeEffects,setActiveEffects]=useState<string[]>([]);
  const audioRef=useRef<HTMLAudioElement>(null);const videoRef=useRef<HTMLVideoElement>(null);
@@ -35,7 +42,7 @@ export default function AudioVideoStudioPanel({assets,onImport,onStatus}:Props){
       <div className="tool-strip secondary">{videoTools.slice(7).map(t=><button key={t} onClick={()=>onStatus(`${t} queued for the video pipeline`)}>{t}</button>)}</div>
       <div className="action-row"><button onClick={preview}>▶ Preview Edit</button><button onClick={()=>onStatus('AI scene detection queued')}>AI Scene Detection</button><button onClick={()=>onStatus('Auto captions queued for Bengali + English')}>Auto Captions</button><button onClick={()=>onStatus('Video export will use the FFmpeg render pipeline')}>Export MP4 / WebM</button></div>
     </>}
-    <div className="multitrack"><div className="track-title">MULTITRACK SESSION</div>{['Dialogue / VO','Music','SFX / Ambience','Video','Captions'].map((t,i)=><div className="media-track" key={t}><span>{t}</span><div className="clip" style={{left:`${8+i*7}%`,width:`${30+i*8}%`}}>{selected?.name||'Empty track'}</div></div>)}</div>
+    <div className="multitrack"><div className="track-title">MULTITRACK SESSION <span className="track-help">Select a clip to edit it, or choose a track and add the selected media.</span></div>{tracks.map((t,i)=>{const clip=media.find(a=>a.id===trackAssignments[t]);return <div className={`media-track ${selectedTrack===t?'track-active':''}`} key={t} onClick={()=>setSelectedTrack(t)}><span className="media-track-name">{t}<button className="track-add" onClick={e=>{e.stopPropagation();assignSelected(t)}} title={`Add selected media to ${t}`}>＋</button></span>{clip?<button className={`clip ${selectedId===clip.id&&selectedTrack===t?'clip-selected':''}`} style={{left:'8%',width:'min(62%, 620px)'}} title={`${clip.name} • click to select clip`} onClick={e=>{e.stopPropagation();select(clip);setSelectedTrack(t)}}><span className="clip-type">{clip.type==='audio'?'♫ AUDIO':'▣ VIDEO'}</span>{clip.name}</button>:<button className="empty-track-slot" onClick={e=>{e.stopPropagation();setSelectedTrack(t);assignSelected(t)}}>＋ Add selected media</button>}</div>})}</div>
    </section>
   </div>
  </div>;
