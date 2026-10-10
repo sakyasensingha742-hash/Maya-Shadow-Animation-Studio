@@ -17,6 +17,10 @@ function boot(){
  let selectedPreset='Bengal Village';
  const save=()=>{const setup={preset:selectedPreset,camera:camera.value,light:light.value,depth:depth.value};localStorage.setItem(KEY,JSON.stringify(setup));return setup};
  try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.camera)camera.value=saved.camera;if(saved.light)light.value=saved.light;if(saved.depth)depth.value=saved.depth;if(saved.preset)selectedPreset=saved.preset}catch{}
+ root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>{const p=presets[Number(b.dataset.preset)||0];if(p.name===selectedPreset)b.classList.add('active')});
+ camera.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom camera framing selected'});
+ light.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom scene mood selected'});
+ depth.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom depth selected'})
  root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=presets[Number(b.dataset.preset)||0];selectedPreset=p.name;camera.value=p.camera;light.value=p.light;status.textContent=`${p.name} selected • ${p.note}`;root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
  root.querySelector('.sd-apply')?.addEventListener('click',()=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=selectedPreset+' applied to Animation Canvas'});
  root.querySelector('.sd-close')?.addEventListener('click',()=>root.remove());
