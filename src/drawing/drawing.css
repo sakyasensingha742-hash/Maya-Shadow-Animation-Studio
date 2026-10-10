@@ -1,1 +1,14 @@
 .drawing-tool{height:100%;display:flex;flex-direction:column;background:#101217}.drawing-controls{height:42px;display:flex;align-items:center;gap:18px;padding:0 12px;border-bottom:1px solid #292c34;background:#17191e;font-size:10px;color:#aeb4c0}.drawing-controls label{display:flex;align-items:center;gap:8px}.drawing-controls input{width:130px}.drawing-controls button{background:#20232a;border:1px solid #30343d;color:#c8ccd5;border-radius:5px;padding:6px 12px}.drawing-tool canvas{width:min(94%,1100px);height:auto;max-height:calc(100% - 60px);aspect-ratio:16/9;align-self:center;margin:auto;background:#f3f0e8;box-shadow:0 20px 60px #0008;touch-action:none}
+
+.drawing-controls{flex-wrap:wrap;min-height:48px;height:auto;padding:7px 12px;gap:10px}
+.drawing-controls>b{font-size:10px;letter-spacing:.09em;color:#d7aa50}
+.drawing-active-tool{padding:4px 8px;border-radius:5px;background:#2b3545;color:#e4edf9;font-size:10px}
+.drawing-controls label{font-size:10px;white-space:nowrap}
+.drawing-controls input[type="color"]{width:27px;height:25px;padding:1px;border:1px solid #495364;background:#101217;border-radius:5px;cursor:pointer}
+.drawing-controls .drawing-text-input{width:120px;max-width:20vw;padding:5px 7px;border:1px solid #394454;border-radius:5px;background:#101217;color:#edf2f9}
+.drawing-controls button{cursor:pointer}
+.drawing-controls .drawing-export{background:#d7aa50;color:#1b1508;border-color:#d7aa50;font-weight:700}
+.drawing-hint{padding:6px 12px;color:#8b9ab0;font-size:10px;background:#13171f;border-bottom:1px solid #242a34}
+.drawing-canvas{cursor:crosshair;touch-action:none}
+.drawing-canvas.drawing-tool-eraser{cursor:cell}
+.drawing-canvas.drawing-tool-text{cursor:text}
