@@ -20,10 +20,7 @@ function boot(){
  const save=()=>{const setup={preset:selectedPreset,camera:camera.value,light:light.value,depth:depth.value};localStorage.setItem(KEY,JSON.stringify(setup));return setup};
  try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.camera)camera.value=saved.camera;if(saved.light)light.value=saved.light;if(saved.depth)depth.value=saved.depth;if(saved.preset)selectedPreset=saved.preset}catch{}
  if(!presets.some(p=>p.name===selectedPreset))selectedPreset='Custom Scene';syncPresetButtons();
- camera.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom camera framing selected • Apply Scene Setup to update Canvas'});
- light.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom scene mood selected • Apply Scene Setup to update Canvas'});
- depth.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom depth selected • Apply Scene Setup to update Canvas'})
- const previewSetup=(message:string)=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=message+' • Canvas preview updated'};
+  const previewSetup=(message:string)=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=message+' • Canvas preview updated'};
  camera.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom camera framing selected')});
  light.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom scene mood selected')});
  depth.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom depth selected')});
