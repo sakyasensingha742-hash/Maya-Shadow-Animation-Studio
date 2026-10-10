@@ -29,3 +29,13 @@
 .scene-environment:has(.scene-background-image){background:transparent;}
 .scene-environment:has(.scene-background-image) .scene-generated-layers{opacity:.32;}
 .scene-environment:has(.scene-background-image) .scene-near-layer{opacity:.4;}
+
+/* Functional desktop-style application menus */
+.menus{align-items:center;gap:3px;min-width:0}
+.menu-root{position:relative;display:flex;align-items:center;height:100%}
+.menu-trigger{height:32px;padding:0 9px;background:transparent;border:1px solid transparent;border-radius:5px;color:#c3c8d2;font:inherit;font-size:12px;white-space:nowrap;cursor:pointer}
+.menu-trigger:hover,.menu-open>.menu-trigger,.menu-trigger[aria-expanded="true"]{background:#252932;border-color:#363b46;color:#fff}
+.menu-dropdown{position:absolute;z-index:1000;left:0;top:calc(100% - 1px);min-width:230px;max-width:300px;padding:5px;background:#1b1e25;border:1px solid #3a3f4a;border-radius:7px;box-shadow:0 14px 36px #000b;display:flex;flex-direction:column;gap:2px}
+.menu-dropdown button{width:100%;padding:9px 11px;border:0;border-radius:4px;background:transparent;color:#d7dbe3;text-align:left;font:inherit;font-size:11px;line-height:1.35;cursor:pointer;white-space:normal}
+.menu-dropdown button:hover,.menu-dropdown button:focus-visible{background:#303641;color:#fff;outline:none}
+@media(max-width:1050px){.topbar{gap:8px;padding:0 8px}.brand{min-width:145px}.menus{gap:0}.menu-trigger{padding:0 6px;font-size:11px}.top-actions{gap:3px}.top-actions button{padding:5px 6px}}
