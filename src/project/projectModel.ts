@@ -5,7 +5,8 @@ export type TimelineTrack = { id: string; name: string; kind: LayerKind; visible
 export type Scene = { id: string; name: string; width: number; height: number; fps: number; duration: number; tracks: TimelineTrack[] };
 export type Asset = { id: string; name: string; type: 'image' | 'audio' | 'video' | 'character' | 'background'; source: string; createdAt: string };
 export type CharacterBinding = { assetId: string; rigId: string; boundAt: string };
-export type StudioProject = { version: 1; name: string; activeSceneId: string; scenes: Scene[]; assets: Asset[]; createdAt: string; updatedAt: string; activeCharacterBinding?: CharacterBinding };
+export type SceneSetup = { preset: string; camera: string; light: string; depth: string };
+export type StudioProject = { version: 1; name: string; activeSceneId: string; scenes: Scene[]; assets: Asset[]; createdAt: string; updatedAt: string; activeCharacterBinding?: CharacterBinding; sceneSetup?: SceneSetup };
 
 export const DEFAULT_SCENE_WIDTH = 1920;
 export const DEFAULT_SCENE_HEIGHT = 1080;
