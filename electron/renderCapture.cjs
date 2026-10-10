@@ -69,14 +69,17 @@ async function prepareRenderViewport(webContents, width, height) {
   win.setContentSize(targetWidth, targetHeight, false);
 
   const styleText = [
-    'html,body,#root{width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;overflow:hidden!important}',
-    '.studio{display:block!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important}',
-    '.studio>.topbar,.studio>.toolbar,.studio>.timeline,.studio>footer{display:none!important}',
-    '.workspace{display:block!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important}',
-    '.left-panel,.right-panel,.canvas-tabs{display:none!important}',
-    '.canvas-area{display:block!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;overflow:hidden!important}',
-    '.stage-wrap{display:block!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;overflow:hidden!important;background:#000!important}',
-    '.stage{width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;max-width:none!important;aspect-ratio:auto!important;transform:none!important;box-shadow:none!important}'
+    'html,body,#root{margin:0!important;padding:0!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#000!important}',
+    'body>*:not(#root){display:none!important}',
+    '.studio{display:block!important;position:relative!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#000!important}',
+    '.studio>*:not(.workspace){display:none!important}',
+    '.workspace{display:block!important;position:relative!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;overflow:hidden!important}',
+    '.workspace>*:not(.canvas-area){display:none!important}',
+    '.left-panel,.right-panel,.canvas-tabs,.topbar,.toolbar,.timeline,footer,.inspector-tabs{display:none!important}',
+    '.canvas-area{display:block!important;position:absolute!important;inset:0!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#000!important}',
+    '.stage-wrap{display:block!important;position:absolute!important;inset:0!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#000!important;padding:0!important;margin:0!important}',
+    '.stage{position:absolute!important;left:0!important;top:0!important;width:' + targetWidth + 'px!important;height:' + targetHeight + 'px!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;transform:none!important;transform-origin:top left!important;box-shadow:none!important;margin:0!important}',
+    '.update-center,.export-center,.export-modal,.modal-overlay,.modal-backdrop,[role="dialog"],[aria-modal="true"]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}'
   ].join('');
 
   const styleScript = '(()=>{let s=document.getElementById(\'__mayaShadowRenderStyle\');if(!s){s=document.createElement(\'style\');s.id=\'__mayaShadowRenderStyle\';document.head.appendChild(s)}s.textContent=' + JSON.stringify(styleText) + ';return true})()';
