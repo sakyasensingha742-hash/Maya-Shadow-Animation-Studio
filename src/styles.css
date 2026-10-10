@@ -19,3 +19,13 @@
 .scene-environment[data-scene-depth="Cinematic Depth"] .scene-mid-layer{filter:blur(1px);}
 .camera-frame>.scene-environment{position:absolute;z-index:0;}
 .camera-frame>.character-image{position:relative;z-index:2;}
+
+
+/* Ensure the scene fills the complete 16:9 stage and the character stays above it. */
+.camera-frame{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;transform-origin:center center;display:grid;place-items:center;}
+.scene-environment{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;}
+.scene-background-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+.scene-generated-layers{position:absolute;inset:0;z-index:1;pointer-events:none;}
+.scene-environment:has(.scene-background-image){background:transparent;}
+.scene-environment:has(.scene-background-image) .scene-generated-layers{opacity:.32;}
+.scene-environment:has(.scene-background-image) .scene-near-layer{opacity:.4;}
