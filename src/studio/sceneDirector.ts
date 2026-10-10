@@ -23,8 +23,12 @@ function boot(){
  camera.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom camera framing selected • Apply Scene Setup to update Canvas'});
  light.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom scene mood selected • Apply Scene Setup to update Canvas'});
  depth.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom depth selected • Apply Scene Setup to update Canvas'})
- root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=presets[Number(b.dataset.preset)||0];selectedPreset=p.name;camera.value=p.camera;light.value=p.light;depth.value=p.depth;status.textContent=`${p.name} selected • ${p.note} • press Apply to update Canvas`;syncPresetButtons()}));
- root.querySelector('.sd-apply')?.addEventListener('click',()=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=selectedPreset+' applied to Animation Canvas • '+setup.camera+' • '+setup.light+' • '+setup.depth});
+ const previewSetup=(message:string)=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=message+' • Canvas preview updated'};
+ camera.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom camera framing selected')});
+ light.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom scene mood selected')});
+ depth.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();previewSetup('Custom depth selected')});
+ root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=presets[Number(b.dataset.preset)||0];selectedPreset=p.name;camera.value=p.camera;light.value=p.light;depth.value=p.depth;syncPresetButtons();previewSetup(p.name+' selected • '+p.note)}));
+ root.querySelector('.sd-apply')?.addEventListener('click',()=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=selectedPreset+' applied to Animation Canvas • '+setup.camera+' • '+setup.light+' • '+setup.depth;root.remove()});
  root.querySelector('.sd-close')?.addEventListener('click',()=>root.remove());
 }
 export function openSceneDirector(){boot()}
