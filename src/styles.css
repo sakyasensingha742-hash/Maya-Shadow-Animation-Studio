@@ -81,3 +81,26 @@
 .scene-environment:has(.scene-background-image)[data-scene-mood="Golden Hour"] .scene-background-image{filter:sepia(.22) saturate(1.2) hue-rotate(-7deg)}
 .scene-environment:has(.scene-background-image)[data-scene-mood="Window Soft"] .scene-background-image{filter:brightness(1.1) saturate(.78)}
 .scene-environment:has(.scene-background-image)[data-scene-mood="Moonlight"] .scene-background-image{filter:brightness(.62) saturate(.68) hue-rotate(8deg)}
+
+/* Expanded animator tool rack and direct transform inspector */
+.tools-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:0 8px 7px}
+.tools-grid button{min-width:0;cursor:pointer;transition:background .12s,border-color .12s}
+.tools-grid button b{font-size:13px}
+.tools-grid button span{font-size:9px;white-space:normal;text-align:center;line-height:1.1}
+.tools-grid button.selected-tool{border-color:#d7aa50!important;box-shadow:inset 0 0 0 1px #d7aa5060}
+.tools-grid button:hover{border-color:#67748b;background:#252c38}
+.left-panel .panel-title:first-child{color:#d7aa50}
+.transform-tools{margin:8px 9px 12px;padding:9px;border:1px solid #373d49;background:#191c22;border-radius:7px}
+.transform-tools .panel-title{padding:3px 0 8px;margin:0;border:0;color:#d7aa50}
+.transform-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.transform-grid label{font-size:9px;color:#929cad;display:flex;flex-direction:column;gap:4px;min-width:0}
+.transform-grid input{width:100%;min-width:0;padding:5px 6px;color:#edf0f6;background:#0e1117;border:1px solid #363d4a;border-radius:4px;font-size:10px}
+.transform-tools .transform-apply{width:100%;margin:9px 0 0;text-align:center;background:#d7aa50;color:#17130a;border-color:#d7aa50;font-weight:800;cursor:pointer}
+.transform-button-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:7px}
+.transform-button-row button{min-width:0;padding:5px 1px;border:1px solid #363c47;background:#242932;color:#d7dce6;border-radius:4px;font-size:9px;cursor:pointer}
+.transform-button-row button:hover{background:#343c49;border-color:#8797ae}
+.character-image{touch-action:none;user-select:none;-webkit-user-drag:none}
+.character-image.character-transform-mode{cursor:grab;outline:1px dashed rgba(215,170,80,.8);outline-offset:3px}
+.character-image.character-transform-mode:active{cursor:grabbing}
+.tool-readout{color:#d7aa50}
+@media(max-height:850px){.tools-grid button{height:43px}.left-panel .panel-title{padding-top:8px;padding-bottom:6px}.transform-tools{padding:7px;margin-top:5px}}
