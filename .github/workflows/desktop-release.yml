@@ -113,15 +113,21 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: always() && needs.windows.result == 'success'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ github.event.repository.default_branch == 'main' && '0.2.4' || '0.2.4' }}
+          name: Maya Shadow Animation Studio v0.2.4
+          body: |
+            Automated Windows release for Maya Shadow Animation Studio v0.2.4.
+            Includes the verified Windows installer and electron-updater metadata.
           files: |
             release/*.exe
             release/latest.yml
             release/*.blockmap
           generate_release_notes: true
           overwrite_files: true
+          make_latest: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
