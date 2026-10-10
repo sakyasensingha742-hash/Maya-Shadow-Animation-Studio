@@ -1,9 +1,7 @@
 import './controlCenter.css';
 
 type Mode='Beginner'|'Professional';
-type AppInfoBridge={getAppInfo?:()=>Promise<{version:string;isDev:boolean}>};
 const key='maya-shadow-ui-mode';
-declare global{interface Window{mayaShadowDesktop?:AppInfoBridge}}
 const command=(name:string)=>window.dispatchEvent(new CustomEvent(`maya-shadow:${name}`));
 const clickText=(text:string)=>{const buttons=[...document.querySelectorAll<HTMLButtonElement>('button')];const button=buttons.find(b=>b.textContent?.trim()===text);button?.click();};
 function boot(){
@@ -13,7 +11,8 @@ function boot(){
  root.innerHTML=`<div class="scc-head"><div><b>STUDIO CONTROL CENTER</b><small>আপনার কাজ এক জায়গা থেকে চালান</small></div><button class="scc-close" aria-label="Close">×</button></div><div class="scc-mode"><span>WORK MODE</span><div><button data-mode="Beginner">Beginner</button><button data-mode="Professional">Professional</button></div></div><div class="scc-start"><b>START HERE</b><p>Character → Rig → Animate → Voice → Background → Export</p></div><div class="scc-actions"><button data-command="create">＋ Create Animation</button><button data-command="save">▣ Save Project</button><button data-command="character">◉ Import Character</button><button data-command="rig">✦ Auto Rig</button><button data-command="background">▧ Add Background</button><button data-command="scene">🎬 Scene Director</button><button data-command="audio">♫ Add Voice / Audio</button><button data-command="voice">🎙 Voice Studio</button><button data-command="presets">✦ Preset Library</button><button data-command="recovery">↻ Recovery Center</button><button data-command="update">↻ Update Center</button><button data-command="preview">▶ Preview</button><button data-command="export">⇧ Export / Render</button></div><div class="scc-footer"><span class="scc-dot"></span><span>Offline Studio Ready</span><span class="scc-version">Checking version…</span></div>`;
  document.body.appendChild(root);
  const versionLabel=root.querySelector('.scc-version') as HTMLElement;
- window.mayaShadowDesktop?.getAppInfo?.().then(info=>{versionLabel.textContent=`v${info.version}${info.isDev?' • DEV':''}`}).catch(()=>{versionLabel.textContent='Version unavailable'});
+ const desktopBridge=(window as Window & {mayaShadowDesktop?:{getAppInfo?:()=>Promise<{version:string;isDev:boolean}>}}).mayaShadowDesktop;
+ desktopBridge?.getAppInfo?.().then(info=>{versionLabel.textContent=`v${info.version}${info.isDev?' • DEV':''}`}).catch(()=>{versionLabel.textContent='Version unavailable'});
  const setMode=(next:Mode)=>{mode=next;localStorage.setItem(key,next);root.dataset.mode=next;root.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===next));document.body.dataset.studioMode=next;};
  setMode(mode);
  root.querySelector<HTMLButtonElement>('.scc-close')?.addEventListener('click',()=>root.classList.toggle('collapsed'));
