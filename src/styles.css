@@ -104,3 +104,9 @@
 .character-image.character-transform-mode:active{cursor:grabbing}
 .tool-readout{color:#d7aa50}
 @media(max-height:850px){.tools-grid button{height:43px}.left-panel .panel-title{padding-top:8px;padding-bottom:6px}.transform-tools{padding:7px;margin-top:5px}}
+
+/* Onion-skin preview: adjacent-frame silhouettes are visual guides, never interactive. */
+.onion-skin-ghost{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;outline:0!important;filter:none!important;}
+.onion-skin-ghost.onion-previous{opacity:.22;mix-blend-mode:screen;}
+.onion-skin-ghost.onion-next{opacity:.16;mix-blend-mode:screen;}
+.transform-button-row{grid-template-columns:repeat(5,minmax(0,1fr));}
