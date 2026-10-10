@@ -5,10 +5,11 @@ import { loadActiveCharacterAssetId } from '../character/characterReplacement';
 
 export type RigPoint={id:string;label:string;x:number;y:number;group:'body'|'face'|'mouth'|'hair'};
 export const initialPoints:RigPoint[]=[
-{id:'head',label:'Head',x:50,y:16,group:'body'},{id:'neck',label:'Neck',x:50,y:25,group:'body'},{id:'spine',label:'Spine',x:50,y:43,group:'body'},{id:'pelvis',label:'Pelvis',x:50,y:60,group:'body'},
-{id:'l-shoulder',label:'L Shoulder',x:36,y:30,group:'body'},{id:'r-shoulder',label:'R Shoulder',x:64,y:30,group:'body'},{id:'l-elbow',label:'L Elbow',x:27,y:45,group:'body'},{id:'r-elbow',label:'R Elbow',x:73,y:45,group:'body'},{id:'l-hand',label:'L Hand',x:21,y:60,group:'body'},{id:'r-hand',label:'R Hand',x:79,y:60,group:'body'},
-{id:'l-knee',label:'L Knee',x:43,y:76,group:'body'},{id:'r-knee',label:'R Knee',x:57,y:76,group:'body'},{id:'l-ankle',label:'L Ankle',x:40,y:90,group:'body'},{id:'r-ankle',label:'R Ankle',x:60,y:90,group:'body'},{id:'l-toe',label:'L Toe',x:38,y:96,group:'body'},{id:'r-toe',label:'R Toe',x:62,y:96,group:'body'},
-{id:'l-eye',label:'L Eye',x:46,y:17,group:'face'},{id:'r-eye',label:'R Eye',x:54,y:17,group:'face'},{id:'brow-l',label:'L Brow',x:46,y:13,group:'face'},{id:'brow-r',label:'R Brow',x:54,y:13,group:'face'},{id:'mouth',label:'Mouth',x:50,y:23,group:'mouth'},{id:'hair',label:'Hair',x:50,y:8,group:'hair'}];
+/* Default map aligned to the built-in 500×760 full-body character artwork. Imported art can be adjusted by dragging points. */
+{id:'head',label:'Head',x:50,y:19,group:'body'},{id:'neck',label:'Neck',x:50,y:31,group:'body'},{id:'spine',label:'Spine',x:50,y:48,group:'body'},{id:'pelvis',label:'Pelvis',x:50,y:63,group:'body'},
+{id:'l-shoulder',label:'L Shoulder',x:39,y:36,group:'body'},{id:'r-shoulder',label:'R Shoulder',x:61,y:36,group:'body'},{id:'l-elbow',label:'L Elbow',x:31,y:48,group:'body'},{id:'r-elbow',label:'R Elbow',x:69,y:48,group:'body'},{id:'l-hand',label:'L Hand',x:32,y:58,group:'body'},{id:'r-hand',label:'R Hand',x:68,y:58,group:'body'},
+{id:'l-knee',label:'L Knee',x:43,y:74,group:'body'},{id:'r-knee',label:'R Knee',x:57,y:74,group:'body'},{id:'l-ankle',label:'L Ankle',x:41,y:88,group:'body'},{id:'r-ankle',label:'R Ankle',x:59,y:88,group:'body'},{id:'l-toe',label:'L Toe',x:37,y:93,group:'body'},{id:'r-toe',label:'R Toe',x:63,y:93,group:'body'},
+{id:'l-eye',label:'L Eye',x:43,y:25,group:'face'},{id:'r-eye',label:'R Eye',x:57,y:25,group:'face'},{id:'brow-l',label:'L Brow',x:43,y:23,group:'face'},{id:'brow-r',label:'R Brow',x:57,y:23,group:'face'},{id:'mouth',label:'Mouth',x:50,y:32,group:'mouth'},{id:'hair',label:'Hair',x:50,y:10,group:'hair'}];
 const bones:[string,string][]=[['head','neck'],['neck','spine'],['spine','pelvis'],['neck','l-shoulder'],['l-shoulder','l-elbow'],['l-elbow','l-hand'],['neck','r-shoulder'],['r-shoulder','r-elbow'],['r-elbow','r-hand'],['pelvis','l-knee'],['l-knee','l-ankle'],['l-ankle','l-toe'],['pelvis','r-knee'],['r-knee','r-ankle'],['r-ankle','r-toe']];
 type Props={image?:string|null;onRigCreated?:(rig:CharacterRig)=>void};
 export default function RigMapCanvas({image,onRigCreated}:Props){
