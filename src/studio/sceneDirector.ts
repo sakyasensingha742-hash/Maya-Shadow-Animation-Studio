@@ -1,11 +1,11 @@
 import './sceneDirector.css';
 
-type ScenePreset={name:string;note:string;camera:string;light:string};
+type ScenePreset={name:string;note:string;camera:string;light:string;depth:string};
 const presets:ScenePreset[]=[
- {name:'Bengal Village',note:'Warm rural daylight • natural depth',camera:'Medium Wide',light:'Warm Day'},
- {name:'Riverbank Evening',note:'Soft sunset • cinematic atmosphere',camera:'Wide',light:'Golden Hour'},
- {name:'Rural Interior',note:'Quiet room • soft window light',camera:'Medium',light:'Window Soft'},
- {name:'Night Mystery',note:'Deep shadows • dramatic moonlight',camera:'Wide',light:'Moonlight'}
+ {name:'Bengal Village',note:'Warm rural daylight • natural depth',camera:'Medium Wide',light:'Warm Day',depth:'2.5D Near / Mid / Far'},
+ {name:'Riverbank Evening',note:'Soft sunset • cinematic atmosphere',camera:'Wide',light:'Golden Hour',depth:'Cinematic Depth'},
+ {name:'Rural Interior',note:'Quiet room • soft window light',camera:'Medium',light:'Window Soft',depth:'2.5D Near / Mid / Far'},
+ {name:'Night Mystery',note:'Deep shadows • dramatic moonlight',camera:'Wide',light:'Moonlight',depth:'Cinematic Depth'}
 ];
 const KEY='maya-shadow-scene-director';
 function boot(){
@@ -15,14 +15,16 @@ function boot(){
  document.body.appendChild(root);
  const camera=root.querySelector<HTMLSelectElement>('[data-camera]')!,light=root.querySelector<HTMLSelectElement>('[data-light]')!,depth=root.querySelector<HTMLSelectElement>('[data-depth]')!,status=root.querySelector('[data-status]') as HTMLElement;
  let selectedPreset='Bengal Village';
+ const presetButtons=()=>root.querySelectorAll<HTMLButtonElement>('[data-preset]');
+ const syncPresetButtons=()=>presetButtons().forEach(b=>{const p=presets[Number(b.dataset.preset)||0];b.classList.toggle('active',p.name===selectedPreset)});
  const save=()=>{const setup={preset:selectedPreset,camera:camera.value,light:light.value,depth:depth.value};localStorage.setItem(KEY,JSON.stringify(setup));return setup};
  try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.camera)camera.value=saved.camera;if(saved.light)light.value=saved.light;if(saved.depth)depth.value=saved.depth;if(saved.preset)selectedPreset=saved.preset}catch{}
- root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>{const p=presets[Number(b.dataset.preset)||0];if(p.name===selectedPreset)b.classList.add('active')});
- camera.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom camera framing selected'});
- light.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom scene mood selected'});
- depth.addEventListener('change',()=>{selectedPreset='Custom Scene';root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));status.textContent='Custom depth selected'})
- root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=presets[Number(b.dataset.preset)||0];selectedPreset=p.name;camera.value=p.camera;light.value=p.light;status.textContent=`${p.name} selected • ${p.note}`;root.querySelectorAll('[data-preset]').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
- root.querySelector('.sd-apply')?.addEventListener('click',()=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=selectedPreset+' applied to Animation Canvas'});
+ if(!presets.some(p=>p.name===selectedPreset))selectedPreset='Custom Scene';syncPresetButtons();
+ camera.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom camera framing selected • Apply Scene Setup to update Canvas'});
+ light.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom scene mood selected • Apply Scene Setup to update Canvas'});
+ depth.addEventListener('change',()=>{selectedPreset='Custom Scene';syncPresetButtons();status.textContent='Custom depth selected • Apply Scene Setup to update Canvas'})
+ root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=presets[Number(b.dataset.preset)||0];selectedPreset=p.name;camera.value=p.camera;light.value=p.light;depth.value=p.depth;status.textContent=`${p.name} selected • ${p.note} • press Apply to update Canvas`;syncPresetButtons()}));
+ root.querySelector('.sd-apply')?.addEventListener('click',()=>{const setup=save();window.dispatchEvent(new CustomEvent('maya-shadow:scene-setup',{detail:setup}));status.textContent=selectedPreset+' applied to Animation Canvas • '+setup.camera+' • '+setup.light+' • '+setup.depth});
  root.querySelector('.sd-close')?.addEventListener('click',()=>root.remove());
 }
 export function openSceneDirector(){boot()}
