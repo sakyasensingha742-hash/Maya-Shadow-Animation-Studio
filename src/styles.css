@@ -52,3 +52,32 @@
 .background-preview-panel{margin:16px 0;padding:12px;max-width:500px;display:flex;flex-direction:column;align-items:flex-start;gap:9px;border:1px solid #30343d;border-radius:7px;background:#191c22}
 .background-preview-panel b{font-size:11px;color:#dfe3eb}
 .background-preview-panel img{display:block;width:min(100%,420px);max-height:210px;object-fit:contain;border-radius:4px;background:#101217}
+
+/* Clear Scene Director presets on the actual Animation Canvas */
+.scene-environment{isolation:isolate;transition:background .25s ease,filter .25s ease}
+.scene-environment[data-scene-preset="Bengal Village"] .scene-far-layer{background:linear-gradient(145deg,transparent 0 18%,rgba(67,119,82,.55) 18% 27%,transparent 27%),linear-gradient(215deg,transparent 0 22%,rgba(82,139,86,.45) 22% 34%,transparent 34%)}
+.scene-environment[data-scene-preset="Riverbank Evening"]:before{left:72%;top:13%;background:#ffd5a0;box-shadow:0 0 35px rgba(255,178,109,.55)}
+.scene-environment[data-scene-preset="Riverbank Evening"] .scene-far-layer{inset:38% -5% 20%;background:linear-gradient(180deg,transparent 0 30%,rgba(66,93,95,.55) 30% 62%,transparent 62%),linear-gradient(145deg,transparent 0 24%,rgba(64,100,95,.56) 24% 39%,transparent 39%)}
+.scene-environment[data-scene-preset="Rural Interior"]{background:linear-gradient(90deg,#6b523b 0%,#a98a60 14%,#decba6 46%,#c4ad84 72%,#5e4737 100%)}
+.scene-environment[data-scene-preset="Rural Interior"]:before{content:"";width:22%;height:48%;aspect-ratio:auto;left:14%;top:16%;border-radius:3px;background:linear-gradient(90deg,#2b4850 0 47%,#6a4d35 47% 53%,#314d56 53%);box-shadow:0 0 0 9px #6b4d35,0 0 0 16px #493427;filter:none}
+.scene-environment[data-scene-preset="Rural Interior"] .scene-far-layer{inset:65% -4% 4%;background:linear-gradient(180deg,rgba(88,54,34,.18),rgba(47,31,24,.65));opacity:.65}
+.scene-environment[data-scene-preset="Rural Interior"] .scene-mid-layer{left:55%;right:8%;bottom:0;height:50%;clip-path:polygon(8% 35%,95% 35%,100% 100%,0 100%);background:#8b6545;opacity:.7}
+.scene-environment[data-scene-preset="Night Mystery"]:before{left:72%;top:8%;background:#dce7ff;box-shadow:0 0 45px rgba(151,183,255,.42)}
+.scene-environment[data-scene-preset="Night Mystery"] .scene-far-layer{background:linear-gradient(145deg,transparent 0 20%,rgba(14,37,38,.75) 20% 34%,transparent 34%),linear-gradient(215deg,transparent 0 20%,rgba(19,42,39,.8) 20% 39%,transparent 39%)}
+.scene-environment[data-scene-depth="Flat"] .scene-far-layer{filter:none;transform:none;opacity:.25}
+.scene-environment[data-scene-depth="Flat"] .scene-mid-layer{filter:none;transform:none;opacity:.35}
+.scene-environment[data-scene-depth="2.5D Near / Mid / Far"] .scene-far-layer{transform:scale(.93);transform-origin:50% 65%;filter:blur(.8px);opacity:.6}
+.scene-environment[data-scene-depth="2.5D Near / Mid / Far"] .scene-mid-layer{transform:scale(1.04);transform-origin:50% 100%;opacity:.72}
+.scene-environment[data-scene-depth="2.5D Near / Mid / Far"] .scene-near-layer{height:32%;opacity:.92}
+.scene-environment[data-scene-depth="Cinematic Depth"] .scene-far-layer{transform:scale(.9);transform-origin:center;filter:blur(4px);opacity:.48}
+.scene-environment[data-scene-depth="Cinematic Depth"] .scene-mid-layer{transform:scale(1.08);transform-origin:bottom;filter:blur(1.4px);opacity:.75}
+.scene-environment[data-scene-depth="Cinematic Depth"] .scene-near-layer{height:38%;filter:blur(.2px);opacity:.96}
+.scene-environment[data-scene-mood="Warm Day"]{filter:saturate(1.08) sepia(.06)}
+.scene-environment[data-scene-mood="Golden Hour"]{filter:saturate(1.18)}
+.scene-environment[data-scene-mood="Window Soft"]{filter:saturate(.74) brightness(1.07)}
+.scene-environment[data-scene-mood="Moonlight"]{filter:saturate(.68) brightness(.77)}
+.scene-background-image{z-index:0;transition:filter .25s ease,opacity .25s ease}
+.scene-environment:has(.scene-background-image)[data-scene-mood="Warm Day"] .scene-background-image{filter:saturate(1.06) sepia(.07)}
+.scene-environment:has(.scene-background-image)[data-scene-mood="Golden Hour"] .scene-background-image{filter:sepia(.22) saturate(1.2) hue-rotate(-7deg)}
+.scene-environment:has(.scene-background-image)[data-scene-mood="Window Soft"] .scene-background-image{filter:brightness(1.1) saturate(.78)}
+.scene-environment:has(.scene-background-image)[data-scene-mood="Moonlight"] .scene-background-image{filter:brightness(.62) saturate(.68) hue-rotate(8deg)}
