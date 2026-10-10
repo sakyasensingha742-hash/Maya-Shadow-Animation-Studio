@@ -23,6 +23,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Read app version
+        id: app_version
+        shell: pwsh
+        run: |
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          "version=$($package.version)" >> $env:GITHUB_OUTPUT
+          Write-Host "Preparing auto-update release for version $($package.version)"
+
       - name: Verify release tag matches package version
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
@@ -116,10 +124,10 @@ jobs:
         if: always() && success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.2.4
-          name: Maya Shadow Animation Studio v0.2.4
+          tag_name: v${{ steps.app_version.outputs.version }}
+          name: Maya Shadow Animation Studio v${{ steps.app_version.outputs.version }}
           body: |
-            Automated Windows release for Maya Shadow Animation Studio v0.2.4.
+            Automated Windows release for Maya Shadow Animation Studio v${{ steps.app_version.outputs.version }}.
             Includes the verified Windows installer and electron-updater metadata.
           files: |
             release/*.exe
