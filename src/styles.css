@@ -39,3 +39,16 @@
 .menu-dropdown button{width:100%;padding:9px 11px;border:0;border-radius:4px;background:transparent;color:#d7dbe3;text-align:left;font:inherit;font-size:11px;line-height:1.35;cursor:pointer;white-space:normal}
 .menu-dropdown button:hover,.menu-dropdown button:focus-visible{background:#303641;color:#fff;outline:none}
 @media(max-width:1050px){.topbar{gap:8px;padding:0 8px}.brand{min-width:145px}.menus{gap:0}.menu-trigger{padding:0 6px;font-size:11px}.top-actions{gap:3px}.top-actions button{padding:5px 6px}}
+
+/* Background library: explicit preview and canvas application */
+.asset-large-grid{align-items:start}
+.background-asset-card{min-width:0;padding:7px;background:#191c22;border:1px solid #30343d;border-radius:7px;display:flex;flex-direction:column;gap:7px}
+.background-asset-card.active{border-color:#d7aa50;box-shadow:0 0 0 1px #d7aa5040}
+.background-asset-preview{min-width:0;padding:0;border:0;background:transparent;color:#cfd4df;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.background-asset-preview img{width:100%;height:105px;object-fit:cover;border-radius:4px;background:#101217}
+.background-asset-preview span{font-size:10px;overflow-wrap:anywhere;padding:0 2px}
+.apply-background-button,.background-preview-panel button{border:1px solid #d7aa50;background:#d7aa50;color:#18140c;border-radius:5px;padding:8px 9px;font-size:10px;font-weight:700;cursor:pointer}
+.apply-background-button:hover,.background-preview-panel button:hover{background:#edc56f}
+.background-preview-panel{margin:16px 0;padding:12px;max-width:500px;display:flex;flex-direction:column;align-items:flex-start;gap:9px;border:1px solid #30343d;border-radius:7px;background:#191c22}
+.background-preview-panel b{font-size:11px;color:#dfe3eb}
+.background-preview-panel img{display:block;width:min(100%,420px);max-height:210px;object-fit:contain;border-radius:4px;background:#101217}
