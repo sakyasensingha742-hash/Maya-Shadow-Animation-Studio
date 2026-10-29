@@ -19,18 +19,31 @@ export function createGridMesh(width=100,height=100,gridX=20,gridY=16,bones:RigB
  return{vertices,width,height,gridX,gridY};
 }
 
-/** CPU weighted skinning preview. Bone origins stay in normalized rig space. */
+/** CPU weighted skinning preview. Rig poses are absolute world-space rotations;
+ * each vertex follows the weighted delta from each bone's rest transform. */
 export function deformMesh(mesh:DeformableMesh,bones:RigBone[],poses:Record<string,number>={}):MeshVertex[]{
  const byId=new Map(bones.map(b=>[b.id,b]));
+ const posed= new Map<string,{x:number;y:number;rotation:number;cos:number;sin:number}>();
+ const resolve=(b:RigBone):{x:number;y:number;rotation:number;cos:number;sin:number}=>{
+  const cached=posed.get(b.id);if(cached)return cached;
+  const parent=b.parentId?byId.get(b.parentId):undefined;
+  const pr=parent?resolve(parent):null;
+  const rotation=poses[b.id]??b.rotation;
+  const x=pr?pr.x+Math.cos(rotation)*parent!.length:b.x;
+  const y=pr?pr.y+Math.sin(rotation)*parent!.length:b.y;
+  const result={x,y,rotation,cos:Math.cos(rotation),sin:Math.sin(rotation)};
+  posed.set(b.id,result);return result;
+ };
+ bones.forEach(resolve);
  return mesh.vertices.map(v=>{
   let x=0,y=0,total=0;
   for(const [id,w0] of Object.entries(v.weights)){
-   const b=byId.get(id);if(!b)continue;
-   const angle=poses[id]??b.rotation;
-   const p=rotate(v.x,v.y,b.x,b.y,angle-b.rotation);
-   x+=p.x*w0;y+=p.y*w0;total+=w0;
+   const b=byId.get(id);const p=posed.get(id);if(!b||!p)continue;
+   const restLocal=rotate(v.x,v.y,b.x,b.y,-b.rotation);
+   const posedPoint=rotate(restLocal.x,restLocal.y,p.x,p.y,p.rotation);
+   x+=posedPoint.x*w0;y+=posedPoint.y*w0;total+=w0;
   }
-  return total?{...v,x,y}:v;
+  return total>0?{...v,x:x/total,y:y/total}:v;
  });
 }
 
