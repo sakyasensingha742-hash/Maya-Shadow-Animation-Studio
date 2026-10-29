@@ -12,3 +12,8 @@
 .drawing-canvas{cursor:crosshair;touch-action:none}
 .drawing-canvas.drawing-tool-eraser{cursor:cell}
 .drawing-canvas.drawing-tool-text{cursor:text}
+
+/* Direct-on-canvas text editing */
+.drawing-canvas-wrap{position:relative;width:min(94%,1100px);aspect-ratio:16/9;align-self:center;margin:auto;flex:none;box-shadow:0 20px 60px #0008;background:#f3f0e8;}
+.drawing-tool .drawing-canvas{display:block;width:100%;height:100%;max-height:none;aspect-ratio:auto;align-self:stretch;margin:0;box-shadow:none;background:transparent;}
+.drawing-text-editor{position:absolute;min-width:140px;max-width:70%;min-height:1.4em;padding:2px 4px;border:1px dashed #3f6fb5;background:#ffffffcc;outline:2px solid #3f6fb5;resize:both;z-index:3;font-family:Inter,Arial,sans-serif;font-weight:600;line-height:1.25;white-space:pre;overflow:visible;}
