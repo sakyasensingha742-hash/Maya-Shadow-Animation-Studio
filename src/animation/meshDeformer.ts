@@ -29,8 +29,9 @@ export function deformMesh(mesh:DeformableMesh,bones:RigBone[],poses:Record<stri
   const parent=b.parentId?byId.get(b.parentId):undefined;
   const pr=parent?resolve(parent):null;
   const rotation=poses[b.id]??b.rotation;
-  const x=pr?pr.x+Math.cos(rotation)*parent!.length:b.x;
-  const y=pr?pr.y+Math.sin(rotation)*parent!.length:b.y;
+  // This bone endpoint must advance by this bone's length.
+  const x=pr?pr.x+Math.cos(rotation)*b.length:b.x;
+  const y=pr?pr.y+Math.sin(rotation)*b.length:b.y;
   const result={x,y,rotation,cos:Math.cos(rotation),sin:Math.sin(rotation)};
   posed.set(b.id,result);return result;
  };

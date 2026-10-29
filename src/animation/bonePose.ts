@@ -14,6 +14,7 @@ export function poseRig(rig:CharacterRig,poses:Record<string,BonePose>={}):Posed
     const worldRotation=poses[bone.id]?.rotation??bone.rotation;
     const px=parent?parent.x:bone.x;
     const py=parent?parent.y:bone.y;
+    // A child bone's endpoint uses its own length, not its parent's length.
     const x=parent?px+Math.cos(worldRotation)*bone.length:bone.x;
     const y=parent?py+Math.sin(worldRotation)*bone.length:bone.y;
     const posed={...bone,px,py,x,y,rotation:worldRotation,worldRotation};
