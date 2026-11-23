@@ -51,3 +51,71 @@ export function deformMesh(mesh:DeformableMesh,bones:RigBone[],poses:Record<stri
 
 export function poseMapToDegrees(poses:Record<string,number>){return Object.fromEntries(Object.entries(poses).map(([id,r])=>[id,Math.round(r*180/Math.PI*10)/10]));}
 export {clamp};
+
+
+/** Normalize a vertex influence map so every vertex has a stable unit weight sum. */
+export function normalizeVertexWeights(weights:Record<string,number>,fallbackBoneId?:string):Record<string,number>{
+ const safe=Object.fromEntries(Object.entries(weights).map(([id,w])=>[id,Number.isFinite(w)?Math.max(0,w):0]));
+ const total=Object.values(safe).reduce((sum,w)=>sum+w,0);
+ if(total<=1e-8)return fallbackBoneId?{[fallbackBoneId]:1}:{};
+ return Object.fromEntries(Object.entries(safe).filter(([,w])=>w>1e-8).map(([id,w])=>[id,w/total]));
+}
+
+/** Paint a smooth radial influence onto the selected bone. Returns a new mesh. */
+export function paintMeshWeights(
+ mesh:DeformableMesh,
+ boneId:string,
+ center:{x:number;y:number},
+ radius:number,
+ strength:number,
+ mode:'add'|'erase'='add',
+):DeformableMesh{
+ const safeRadius=Math.max(.001,Math.abs(radius));
+ const amount=clamp(Math.abs(strength));
+ const vertices=mesh.vertices.map(vertex=>{
+  const distance=Math.hypot(vertex.x-center.x,vertex.y-center.y);
+  if(distance>=safeRadius)return vertex;
+  const falloff=(1-distance/safeRadius)**2;
+  const delta=amount*falloff;
+  const weights={...vertex.weights};
+  const before=normalizeVertexWeights(weights);
+  if(mode==='add'){
+   const current=before[boneId]??0;
+   weights[boneId]=current+(1-current)*delta;
+  }else{
+   weights[boneId]=(before[boneId]??0)*(1-delta);
+  }
+  const normalized=normalizeVertexWeights(weights);
+  return{...vertex,weights:normalized};
+ });
+ return{...mesh,vertices};
+}
+
+/** Copy mirrored vertex influences across an axis using an explicit left/right bone map. */
+export function mirrorMeshWeights(
+ mesh:DeformableMesh,
+ bonePairs:Record<string,string>,
+ axisX=mesh.width/2,
+ tolerance=Math.max(mesh.width/mesh.gridX,mesh.height/mesh.gridY)*.55,
+):DeformableMesh{
+ const vertices=mesh.vertices;
+ const result=vertices.map(v=>({...v,weights:{...v.weights}}));
+ for(let i=0;i<vertices.length;i++){
+  const source=vertices[i];
+  const targetX=axisX-(source.x-axisX);
+  let match=-1,best=Infinity;
+  for(let j=0;j<vertices.length;j++){
+   const candidate=vertices[j];
+   const distance=Math.hypot(candidate.x-targetX,candidate.y-source.y);
+   if(distance<best){best=distance;match=j;}
+  }
+  if(match<0||best>tolerance||source.x>axisX)continue;
+  const mirrored:Record<string,number>={};
+  for(const [boneId,weight] of Object.entries(source.weights)){
+   const paired=bonePairs[boneId]??boneId;
+   mirrored[paired]=(mirrored[paired]??0)+weight;
+  }
+  result[match]={...result[match],weights:normalizeVertexWeights(mirrored)};
+ }
+ return{...mesh,vertices:result};
+}
