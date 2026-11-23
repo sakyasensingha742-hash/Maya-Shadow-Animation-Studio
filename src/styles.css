@@ -110,3 +110,12 @@
 .onion-skin-ghost.onion-previous{opacity:.22;mix-blend-mode:screen;}
 .onion-skin-ghost.onion-next{opacity:.16;mix-blend-mode:screen;}
 .transform-button-row{grid-template-columns:repeat(5,minmax(0,1fr));}
+
+
+/* Grouped animation toolbox */
+.toolbox-group{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid rgba(148,163,184,.16)}
+.toolbox-group-heading{display:flex;flex-direction:column;gap:3px;padding:8px 2px 7px}
+.toolbox-group-heading b{font-size:10px;letter-spacing:.09em;color:var(--muted,#9aa7b8)}
+.toolbox-group-heading small{font-size:9px;color:var(--muted,#7d8a9b);opacity:.8}
+.toolbox-group .tools-grid{margin-top:2px}
+.panel-title small{display:block;margin-top:4px;font-size:9px;letter-spacing:.04em;opacity:.72}
