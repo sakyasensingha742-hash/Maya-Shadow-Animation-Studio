@@ -29,9 +29,10 @@ export function deformMesh(mesh:DeformableMesh,bones:RigBone[],poses:Record<stri
   const parent=b.parentId?byId.get(b.parentId):undefined;
   const pr=parent?resolve(parent):null;
   const rotation=poses[b.id]??b.rotation;
-  // This bone endpoint must advance by this bone's length.
-  const x=pr?pr.x+Math.cos(rotation)*b.length:b.x;
-  const y=pr?pr.y+Math.sin(rotation)*b.length:b.y;
+  // A child bone starts at its parent's posed endpoint; its own rotation
+  // controls only the direction from that joint to its endpoint.
+  const x=pr&&parent?pr.x+Math.cos(pr.rotation)*parent.length:b.x;
+  const y=pr&&parent?pr.y+Math.sin(pr.rotation)*parent.length:b.y;
   const result={x,y,rotation,cos:Math.cos(rotation),sin:Math.sin(rotation)};
   posed.set(b.id,result);return result;
  };
