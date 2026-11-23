@@ -14,3 +14,5 @@
 .moho-layer-properties small{display:block;color:#7f8998;margin-top:4px;font-size:8px}
 
 .moho-key-switch{width:100%;margin-top:7px!important;color:#e6bd6c!important;border-color:#71582e!important}.moho-switch-keys{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.moho-switch-keys button{font-size:8px;color:#d8b66e}.moho-layer-row>button[title='Collapse group'],.moho-layer-row>button[title='Expand group']{padding:2px 4px;color:#d8b66e}
+
+.moho-active-actions{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.moho-active-actions button{font-size:8px}.moho-clear-solo{width:100%;margin-top:5px;color:#e3bd71!important;border-color:#71582e!important}.moho-layer-row button[aria-label^='Solo']{color:#d7aa50}
