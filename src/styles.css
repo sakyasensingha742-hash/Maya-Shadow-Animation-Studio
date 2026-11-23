@@ -126,3 +126,6 @@
 .timeline-zoom-label{min-width:38px;text-align:center;color:#d7aa50!important;font-variant-numeric:tabular-nums}.timeline-edit-tools button[title^="Zoom"]{min-width:25px;font-weight:700}
 
 .timeline-range{position:absolute;z-index:1;top:0;bottom:0;background:rgba(83,156,220,.16);border-left:1px solid #559cda;border-right:1px solid #559cda;pointer-events:none}.playhead-line{z-index:5}.timeline-edit-tools button:disabled{opacity:.35;cursor:not-allowed}
+
+/* Decoded audio waveform clips in the animation timeline */
+.track{position:relative;min-height:38px}.timeline-audio-clip{position:relative;display:inline-flex;vertical-align:top;height:32px;margin:2px 0 2px 3px;box-sizing:border-box;overflow:hidden;border:1px solid #397e91;border-radius:4px;background:linear-gradient(180deg,#153f4b,#102c39);z-index:1}.timeline-audio-name{position:absolute;left:5px;top:1px;z-index:2;max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:#c6f5f5;text-shadow:0 1px 2px #000}.timeline-audio-wave{position:absolute;inset:8px 3px 1px;display:flex;align-items:center;justify-content:space-around;gap:1px;overflow:hidden;opacity:.9}.timeline-audio-wave i{display:block;flex:1 1 1px;min-width:1px;max-width:3px;border-radius:2px;background:#59c4c5;opacity:.88}.timeline-audio-wave small{font-size:9px;color:#b6d4d8}
