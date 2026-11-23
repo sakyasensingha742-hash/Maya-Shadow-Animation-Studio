@@ -88,7 +88,7 @@ export function solveTwoBoneIK(
   const offset = Math.acos(cosine) * bendDirection;
   const rootAngle = direction - offset;
   const joint = { x: root.x + Math.cos(rootAngle) * a, y: root.y + Math.sin(rootAngle) * a };
-  const end = { x: joint.x + Math.cos(direction + offset * -1) * b, y: joint.y + Math.sin(direction + offset * -1) * b };
+  const end = { x: joint.x + Math.cos(direction + offset) * b, y: joint.y + Math.sin(direction + offset) * b };
   return {
     root,
     joint,
