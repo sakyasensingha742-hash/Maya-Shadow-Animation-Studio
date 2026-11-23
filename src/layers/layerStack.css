@@ -16,3 +16,5 @@
 .moho-key-switch{width:100%;margin-top:7px!important;color:#e6bd6c!important;border-color:#71582e!important}.moho-switch-keys{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.moho-switch-keys button{font-size:8px;color:#d8b66e}.moho-layer-row>button[title='Collapse group'],.moho-layer-row>button[title='Expand group']{padding:2px 4px;color:#d8b66e}
 
 .moho-active-actions{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.moho-active-actions button{font-size:8px}.moho-clear-solo{width:100%;margin-top:5px;color:#e3bd71!important;border-color:#71582e!important}.moho-layer-row button[aria-label^='Solo']{color:#d7aa50}
+
+.moho-layer-tools{display:flex;gap:5px;align-items:center;margin:5px 0}.moho-layer-tools input{flex:1;min-width:65px;background:#101319;color:#e5e9ef;border:1px solid #353c48;border-radius:3px;padding:6px 7px;font-size:9px}.moho-layer-tools button{white-space:nowrap;font-size:8px;padding:5px}.moho-layer-row{cursor:grab}.moho-layer-row:active{cursor:grabbing}.moho-layer-row.dragging{opacity:.38;border:1px dashed #d7aa50}.moho-layer-row.selected{box-shadow:inset 2px 0 #d7aa50}
