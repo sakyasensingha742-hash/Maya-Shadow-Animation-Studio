@@ -52,3 +52,71 @@ export function buildRigFromMap(points: Point[]): CharacterRig {
   ];
   return {version:1,bones,facialControls,generatedAt:new Date().toISOString()};
 }
+
+export type IKPoint = { x: number; y: number };
+export type TwoBoneIKResult = {
+  root: IKPoint;
+  joint: IKPoint;
+  end: IKPoint;
+  rootAngle: number;
+  jointAngle: number;
+  reachable: boolean;
+};
+
+/**
+ * Solve a planar two-segment IK chain with the law of cosines.
+ * Angles are radians, measured from +X; bendDirection selects the
+ * positive (1) or negative (-1) side of the target vector.
+ */
+export function solveTwoBoneIK(
+  root: IKPoint,
+  target: IKPoint,
+  upperLength: number,
+  lowerLength: number,
+  bendDirection: 1 | -1 = 1,
+): TwoBoneIKResult {
+  const a = Math.max(0.0001, Math.abs(upperLength));
+  const b = Math.max(0.0001, Math.abs(lowerLength));
+  const dx = target.x - root.x;
+  const dy = target.y - root.y;
+  const rawDistance = Math.hypot(dx, dy);
+  const minReach = Math.abs(a - b) + 0.0001;
+  const maxReach = Math.max(minReach, a + b - 0.0001);
+  const distance = Math.min(maxReach, Math.max(minReach, rawDistance));
+  const direction = rawDistance > 0.000001 ? Math.atan2(dy, dx) : 0;
+  const cosine = Math.max(-1, Math.min(1, (a * a + distance * distance - b * b) / (2 * a * distance)));
+  const offset = Math.acos(cosine) * bendDirection;
+  const rootAngle = direction - offset;
+  const joint = { x: root.x + Math.cos(rootAngle) * a, y: root.y + Math.sin(rootAngle) * a };
+  const end = { x: joint.x + Math.cos(direction + offset * -1) * b, y: joint.y + Math.sin(direction + offset * -1) * b };
+  return {
+    root,
+    joint,
+    end,
+    rootAngle,
+    jointAngle: Math.atan2(end.y - joint.y, end.x - joint.x) - rootAngle,
+    reachable: rawDistance >= minReach && rawDistance <= maxReach,
+  };
+}
+
+/** Convert a solved world-space IK chain into local rotations for a RigBone pair. */
+export function applyTwoBoneIK(
+  upper: RigBone,
+  lower: RigBone,
+  target: IKPoint,
+  bendDirection: 1 | -1 = 1,
+): { upper: RigBone; lower: RigBone; solution: TwoBoneIKResult } {
+  const solution = solveTwoBoneIK(
+    { x: upper.x, y: upper.y },
+    target,
+    upper.length,
+    lower.length,
+    bendDirection,
+  );
+  return {
+    upper: { ...upper, rotation: solution.rootAngle },
+    lower: { ...lower, rotation: solution.rootAngle + solution.jointAngle },
+    solution,
+  };
+}
+
