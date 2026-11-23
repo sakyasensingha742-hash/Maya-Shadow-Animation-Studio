@@ -1,7 +1,7 @@
-export type LayerKind = 'scene' | 'character' | 'face' | 'rig' | 'background' | 'audio' | 'video' | 'drawing' | 'image' | 'vector' | 'group' | 'particle';
+export type LayerKind = 'scene' | 'character' | 'face' | 'rig' | 'background' | 'audio' | 'video' | 'drawing' | 'image' | 'vector' | 'group' | 'particle' | 'bone' | 'switch' | 'imageSequence' | 'frameByFrame' | 'threeD' | 'note';
 export type KeyframeValue = number | string | boolean | Record<string, number>;
 export type Keyframe = { id: string; frame: number; property: string; value: KeyframeValue; easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' };
-export type TimelineTrack = { id: string; name: string; kind: LayerKind; visible: boolean; locked: boolean; keyframes: Keyframe[]; parentId?: string | null; opacity?: number; blendMode?: 'normal' | 'multiply' | 'screen' | 'add' | 'overlay'; source?: string; vectorData?: string };
+export type TimelineTrack = { id: string; name: string; kind: LayerKind; visible: boolean; locked: boolean; keyframes: Keyframe[]; parentId?: string | null; opacity?: number; blendMode?: 'normal' | 'multiply' | 'screen' | 'add' | 'overlay'; source?: string; vectorData?: string; activeChildId?: string | null; collapsed?: boolean; switchKeyframes?: {frame:number;childId:string}[]; selected?: boolean; }
 export type Scene = { id: string; name: string; width: number; height: number; fps: number; duration: number; tracks: TimelineTrack[] };
 export type Asset = { id: string; name: string; type: 'image' | 'audio' | 'video' | 'character' | 'background'; source: string; createdAt: string };
 export type CharacterBinding = { assetId: string; rigId: string; boundAt: string };
