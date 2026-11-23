@@ -41,7 +41,12 @@ export function deformMesh(mesh:DeformableMesh,bones:RigBone[],poses:Record<stri
   let x=0,y=0,total=0;
   for(const [id,w0] of Object.entries(v.weights)){
    const b=byId.get(id);const p=posed.get(id);if(!b||!p)continue;
-   const restLocal=rotate(v.x,v.y,b.x,b.y,-b.rotation);
+   const parent=b.parentId?byId.get(b.parentId):undefined;
+   // RigBone x/y stores the child endpoint; skinning must rotate around the
+   // bone's rest start (the parent endpoint), not around its own endpoint.
+   const restStartX=parent?parent.x:b.x;
+   const restStartY=parent?parent.y:b.y;
+   const restLocal=rotate(v.x,v.y,restStartX,restStartY,-b.rotation);
    const posedPoint=rotate(restLocal.x,restLocal.y,p.x,p.y,p.rotation);
    x+=posedPoint.x*w0;y+=posedPoint.y*w0;total+=w0;
   }
