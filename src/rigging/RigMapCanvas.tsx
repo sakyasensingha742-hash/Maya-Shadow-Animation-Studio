@@ -18,7 +18,7 @@ export default function RigMapCanvas({image,onRigCreated}:Props){
  const [smartDrivers,setSmartDrivers]=useState<SmartBoneDriver[]>([]);
  const [driverInput,setDriverInput]=useState('upperArmL'),[driverOutput,setDriverOutput]=useState('lowerArmL');
  const [driverStart,setDriverStart]=useState(-90),[driverEnd,setDriverEnd]=useState(90),[driverOutputStart,setDriverOutputStart]=useState(-25),[driverOutputEnd,setDriverOutputEnd]=useState(25),[driverEasing,setDriverEasing]=useState<'linear'|'smooth'>('smooth');
- useEffect(()=>{const restored=loadBoundRig();if(restored){onRigCreated?.(restored);setStatus(`Saved rig restored • ${restored.bones.length} bones`)}},[onRigCreated]);
+ useEffect(()=>{const restored=loadBoundRig();if(restored){setSmartDrivers(restored.smartBoneDrivers??[]);onRigCreated?.(restored);setStatus(`Saved rig restored • ${restored.bones.length} bones • ${(restored.smartBoneDrivers??[]).length} Smart Bone drivers`)}},[onRigCreated]);
  const visible=useMemo(()=>activeGroup==='all'?points:points.filter(p=>p.group===activeGroup),[points,activeGroup]);
  const movePoint=(id:string,e:React.PointerEvent<HTMLButtonElement>)=>{const stage=e.currentTarget.parentElement;if(!stage)return;const r=stage.getBoundingClientRect();const x=Math.max(2,Math.min(98,(e.clientX-r.left)/r.width*100));const y=Math.max(2,Math.min(98,(e.clientY-r.top)/r.height*100));setPoints(p=>p.map(q=>q.id===id?{...q,x,y}:q));setStatus('Map edited • unsaved')};
  const pointById=(id:string)=>points.find(p=>p.id===id)!;
