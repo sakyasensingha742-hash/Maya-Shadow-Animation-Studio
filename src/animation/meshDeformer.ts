@@ -124,3 +124,17 @@ export function mirrorMeshWeights(
  }
  return{...mesh,vertices:result};
 }
+
+/** Smooth one bone's influence over the regular grid while preserving normalized weights. */
+export function smoothMeshWeights(mesh:DeformableMesh,boneId:string,strength=.5,iterations=1):DeformableMesh{
+ const amount=clamp(strength);let vertices=mesh.vertices.map(v=>({...v,weights:{...v.weights}}));
+ const width=mesh.gridX+1,height=mesh.gridY+1;
+ for(let pass=0;pass<Math.max(1,Math.min(8,Math.floor(iterations)));pass++){
+  const next=vertices.map((v,index)=>{const x=index%width,y=Math.floor(index/width),neighbors:number[]=[];
+   if(x>0)neighbors.push(index-1);if(x<width-1)neighbors.push(index+1);if(y>0)neighbors.push(index-width);if(y<height-1)neighbors.push(index+width);
+   if(!neighbors.length)return v;const average=neighbors.reduce((sum,i)=>sum+(vertices[i].weights[boneId]??0),0)/neighbors.length;
+   const weights={...v.weights,[boneId]:(v.weights[boneId]??0)*(1-amount)+average*amount};return{...v,weights:normalizeVertexWeights(weights)};
+  });vertices=next;
+ }
+ return{...mesh,vertices};
+}
