@@ -19,7 +19,7 @@ type Props={
  * This is a 2D weighted-mesh fallback for a flattened image; layered body parts still deform best. */
 export default function SkinnedCharacterCanvas({image,rig,pose,className,style,onPointerDown,onPointerMove,onPointerUp,onPointerCancel}:Props){
  const canvasRef=useRef<HTMLCanvasElement|null>(null);
- const mesh=useMemo(()=>createGridMesh(100,100,20,16,rig.bones),[rig]);
+ const mesh=useMemo(()=>{const base=createGridMesh(100,100,20,16,rig.bones);return rig.meshWeights?.length===base.vertices.length?{...base,vertices:base.vertices.map((v,i)=>({...v,weights:rig.meshWeights![i]??v.weights}))}:base;},[rig.bones,rig.meshWeights]);
  const rotations=useMemo(()=>applySmartBoneDrivers(Object.fromEntries(Object.entries(pose).map(([id,p])=>[id,p.rotation])),rig.smartBoneDrivers??[]),[pose,rig.smartBoneDrivers]);
  useEffect(()=>{
   const canvas=canvasRef.current;if(!canvas)return;

@@ -14,3 +14,5 @@
 .weight-paint-footer b{color:#e7b477}
 
 .weight-smooth-control{padding:7px 12px;background:#121821;border-bottom:1px solid #2a3038}.weight-smooth-control label{display:flex;align-items:center;gap:10px;max-width:360px;color:#9eacbe;font-size:10px}.weight-smooth-control input{flex:1;accent-color:#e8a75d}.weight-smooth-control b{color:#e8edf5;min-width:36px}
+
+.weight-paint-toolbar>label select{display:block;width:100%;margin-top:5px;background:#171e2b;border:1px solid #39475b;color:#d9e5f3;border-radius:4px;padding:5px;font-size:10px}

@@ -76,6 +76,14 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 - The bridge currently handles rig hierarchy and transforms. It does not yet convert Maya Shadow mesh weights, image attachments, Smart Bone drivers or bone constraints into OpenBone documents. Those are explicit next integration tasks.
 - Uses the OpenBone Core `lipSync` spectral/loudness routine in a dedicated Web Worker to analyse locally imported audio and create six-shape Face track cues. This is approximate audio-driven mouth motion, not phoneme recognition.
 
+### Bone-2D research and weight-profile integration
+
+- Reviewed the MIT-licensed Bone-2D TypeScript skeletal editor and its separation of pure rig/mesh core, document model, renderer, store and UI.
+- Added a second auto-weight profile to `src/animation/meshDeformer.ts`: **Smooth (Bone-2D)** uses inverse `(distance + 6)^2.2`, top-four influences and a 4% relative cutoff; **Sharp (Rigby2D)** retains the inverse-fourth-power profile.
+- Added an explicit **Rebuild Auto Weights** action so changing profile does not silently overwrite hand-painted weights.
+- Fixed `SkinnedCharacterCanvas` to load saved `rig.meshWeights`; previously the weight-paint editor saved weights but the primary animation-stage skinning path regenerated default weights and ignored those saved values.
+- This is a targeted algorithm adaptation, not a port of the Bone-2D editor or its Spine-compatible runtime.
+
 ## Next implementation order
 
 1. Build conformance tests for the Maya Shadow ↔ OpenBone coordinate/pose bridge (root, parent-child, left/right, rotated parent, zero-length bone, limits).
@@ -93,4 +101,6 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 - OpenBone Canvas renderer README: https://github.com/UXCentury/open-bone/tree/main/packages/render-canvas
 - OSATURA limitations and license notes: https://github.com/chiuta/osatura
 - Rigby2D license and third-party notices: https://github.com/jaisurya-dev-art/rigby2d
+- Bone-2D MIT source and architecture: https://github.com/iamgatz/Bone-2D
+- Bone-2D mesh and auto-weight implementation: https://github.com/iamgatz/Bone-2D/blob/main/src/core/mesh.ts
 - Graphite license: https://github.com/GraphiteEditor/Graphite

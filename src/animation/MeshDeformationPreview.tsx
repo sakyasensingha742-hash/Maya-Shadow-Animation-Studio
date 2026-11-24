@@ -1,20 +1,21 @@
 import React,{useMemo,useState} from 'react';
 import {CharacterRig,applySmartBoneDrivers} from '../rigging/rigEngine';
 import {RigPose} from './poseTrack';
-import {createGridMesh,deformMesh,paintMeshWeights,mirrorMeshWeights,smoothMeshWeights,normalizeVertexWeights} from './meshDeformer';
+import {createGridMesh,deformMesh,paintMeshWeights,mirrorMeshWeights,smoothMeshWeights,normalizeVertexWeights,AutoWeightAlgorithm} from './meshDeformer';
 import './meshDeformation.css';
 
 type Props={rig:CharacterRig;pose:RigPose;image?:string|null;onRigChange?:(rig:CharacterRig)=>void};
 const mirrorPairs:Record<string,string>={upperArmL:'upperArmR',lowerArmL:'lowerArmR',handL:'handR',upperArmR:'upperArmL',lowerArmR:'lowerArmL',handR:'handL',upperLegL:'upperLegR',lowerLegL:'lowerLegR',footL:'footR',upperLegR:'upperLegL',lowerLegR:'lowerLegL',footR:'footL'};
 export default function MeshDeformationPreview({rig,pose,image,onRigChange}:Props){
  const [boneId,setBoneId]=useState(rig.bones[0]?.id??'root');
+ const [weightAlgorithm,setWeightAlgorithm]=useState<AutoWeightAlgorithm>('bone2d');
  const [radius,setRadius]=useState(12);
  const [strength,setStrength]=useState(.35);
  const [smoothStrength,setSmoothStrength]=useState(.55);
  const [mode,setMode]=useState<'add'|'erase'>('add');
  const [painting,setPainting]=useState(false);
  const [cursor,setCursor]=useState<{x:number;y:number}|null>(null);
- const base=useMemo(()=>createGridMesh(100,100,20,16,rig.bones),[rig.bones]);
+ const base=useMemo(()=>createGridMesh(100,100,20,16,rig.bones,{algorithm:weightAlgorithm}),[rig.bones,weightAlgorithm]);
  const mesh=useMemo(()=>rig.meshWeights?.length===base.vertices.length?{...base,vertices:base.vertices.map((v,i)=>({...v,weights:rig.meshWeights![i]??v.weights}))}:base,[base,rig.meshWeights]);
  const rotations=useMemo(()=>applySmartBoneDrivers(Object.fromEntries(Object.entries(pose).map(([id,p])=>[id,p.rotation])),rig.smartBoneDrivers??[]),[pose,rig.smartBoneDrivers]);
  const posed=useMemo(()=>deformMesh(mesh,rig.bones,rotations),[mesh,rig.bones,rotations]);
@@ -34,7 +35,8 @@ export default function MeshDeformationPreview({rig,pose,image,onRigChange}:Prop
    <label>Influence Bone<select value={boneId} onChange={e=>setBoneId(e.target.value)}>{rig.bones.map(b=><option key={b.id} value={b.id}>{b.id}</option>)}</select></label>
    <label>Brush Radius <b>{radius}</b><input type="range" min="3" max="30" value={radius} onChange={e=>setRadius(Number(e.target.value))}/></label>
    <label>Strength <b>{Math.round(strength*100)}%</b><input type="range" min=".05" max="1" step=".05" value={strength} onChange={e=>setStrength(Number(e.target.value))}/></label>
-   <div className="weight-paint-actions"><button className={mode==='add'?'active':''} onClick={()=>setMode('add')}>Paint</button><button className={mode==='erase'?'active':''} onClick={()=>setMode('erase')}>Erase</button><button onClick={mirrored}>Mirror L ↔ R</button><button onClick={()=>{const updated=smoothMeshWeights(mesh,boneId,smoothStrength,2);onRigChange?.({...rig,meshWeights:updated.vertices.map(v=>v.weights)});}}>Smooth Weights</button><button onClick={()=>{const reset=base.vertices.map((v,i)=>{const current={...(mesh.vertices[i]?.weights??{})};if((v.weights[boneId]??0)>0)current[boneId]=v.weights[boneId];else delete current[boneId];return {...v,weights:normalizeVertexWeights(current,rig.bones[0]?.id)}});onRigChange?.({...rig,meshWeights:reset.map(v=>v.weights)});}}>Reset Bone</button></div>
+   <label>Auto Weight Profile<select value={weightAlgorithm} onChange={e=>setWeightAlgorithm(e.target.value as AutoWeightAlgorithm)}><option value="bone2d">Smooth (Bone-2D)</option><option value="rigby">Sharp (Rigby2D)</option></select></label>
+   <div className="weight-paint-actions"><button onClick={()=>onRigChange?.({...rig,meshWeights:base.vertices.map(v=>v.weights)})}>Rebuild Auto Weights</button><button className={mode==='add'?'active':''} onClick={()=>setMode('add')}>Paint</button><button className={mode==='erase'?'active':''} onClick={()=>setMode('erase')}>Erase</button><button onClick={mirrored}>Mirror L ↔ R</button><button onClick={()=>{const updated=smoothMeshWeights(mesh,boneId,smoothStrength,2);onRigChange?.({...rig,meshWeights:updated.vertices.map(v=>v.weights)});}}>Smooth Weights</button><button onClick={()=>{const reset=base.vertices.map((v,i)=>{const current={...(mesh.vertices[i]?.weights??{})};if((v.weights[boneId]??0)>0)current[boneId]=v.weights[boneId];else delete current[boneId];return {...v,weights:normalizeVertexWeights(current,rig.bones[0]?.id)}});onRigChange?.({...rig,meshWeights:reset.map(v=>v.weights)});}}>Reset Bone</button></div>
   </div>
   <div className="weight-smooth-control"><label>Smoothing Strength <b>{Math.round(smoothStrength*100)}%</b><input type="range" min=".1" max="1" step=".05" value={smoothStrength} onChange={e=>setSmoothStrength(Number(e.target.value))}/></label></div>
   <div className="mesh-stage"><svg viewBox="0 0 100 100" preserveAspectRatio="none" onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);setPainting(true);paint(e,true);}} onPointerMove={paint} onPointerUp={()=>setPainting(false)} onPointerCancel={()=>setPainting(false)} onPointerLeave={()=>{if(!painting)setCursor(null);}}>

@@ -2,6 +2,8 @@ import {RigBone} from '../rigging/rigEngine';
 
 export type MeshVertex={x:number;y:number;weights:Record<string,number>};
 export type DeformableMesh={vertices:MeshVertex[];width:number;height:number;gridX:number;gridY:number};
+export type AutoWeightAlgorithm='rigby'|'bone2d';
+export type AutoWeightOptions={algorithm?:AutoWeightAlgorithm;maxInfluences?:number;falloff?:number;distanceOffset?:number;minimumRelative?:number};
 
 const clamp=(v:number,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const rotate=(x:number,y:number,cx:number,cy:number,a:number)=>{const dx=x-cx,dy=y-cy,c=Math.cos(a),s=Math.sin(a);return{x:cx+dx*c-dy*s,y:cy+dx*s+dy*c};};
@@ -17,37 +19,54 @@ export function distanceToBoneSegment(point:{x:number;y:number},from:{x:number;y
 }
 
 /**
- * Segment-aware automatic skin weights adapted from Rigby2D meshgeom autoWeights.
- * Inverse fourth-power distance makes the nearest bone segment dominate, while
- * retaining up to four normalized influences per vertex.
+ * Segment-aware automatic skin weights with two selectable open-source profiles.
+ * Rigby2D is the sharper inverse-fourth-power mode; Bone-2D is a softer, tunable falloff.
  * Upstream: https://github.com/jaisurya-dev-art/rigby2d
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
-export function autoWeightsForBones(point:{x:number;y:number},bones:RigBone[],maxInfluences=4):Record<string,number>{
+export function autoWeightsForBones(point:{x:number;y:number},bones:RigBone[],options:AutoWeightOptions={}):Record<string,number>{
+ const algorithm=options.algorithm??'rigby';
+ const maxInfluences=Math.max(1,Math.floor(options.maxInfluences??4));
+ const falloff=options.falloff??2.2;
+ const distanceOffset=options.distanceOffset??6;
+ const minimumRelative=options.minimumRelative??.04;
  const byId=new Map(bones.map(b=>[b.id,b]));
  const segments:BoneSegment[]=bones.map(b=>{
   const parent=b.parentId?byId.get(b.parentId):undefined;
   const from=parent?{x:parent.x,y:parent.y}:{x:b.x,y:b.y};
   return{bone:b.id,from,to:{x:b.x,y:b.y}};
  });
- const raw=segments.map(segment=>({id:segment.bone,weight:1/Math.pow(distanceToBoneSegment(point,segment.from,segment.to)+1,4)}));
+ const raw=segments.map(segment=>{
+  const distance=distanceToBoneSegment(point,segment.from,segment.to);
+  const weight=algorithm==='bone2d'?1/Math.pow(distance+distanceOffset,falloff):1/Math.pow(distance+1,4);
+  return{id:segment.bone,weight};
+ });
+ if(algorithm==='bone2d'){
+  const ranked=raw.sort((a,b)=>b.weight-a.weight).slice(0,maxInfluences);
+  const topSum=ranked.reduce((sum,influence)=>sum+influence.weight,0);
+  if(topSum<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
+  const kept=ranked.filter(influence=>influence.weight/topSum>=minimumRelative);
+  const keptSum=kept.reduce((sum,influence)=>sum+influence.weight,0);
+  if(keptSum<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
+  return Object.fromEntries(kept.map(influence=>[influence.id,influence.weight/keptSum]));
+ }
  const total=raw.reduce((sum,influence)=>sum+influence.weight,0);
  if(total<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
  const ranked=raw.map(influence=>({...influence,weight:influence.weight/total}))
   .filter(influence=>influence.weight>1e-3)
   .sort((a,b)=>b.weight-a.weight)
-  .slice(0,Math.max(1,maxInfluences));
+  .slice(0,maxInfluences);
  const keptTotal=ranked.reduce((sum,influence)=>sum+influence.weight,0);
  if(keptTotal<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
  return Object.fromEntries(ranked.map(influence=>[influence.id,influence.weight/keptTotal]));
 }
 
 /** Creates a normalized 0–100 character mesh so it matches the rig-map coordinate system. */
-export function createGridMesh(width=100,height=100,gridX=20,gridY=16,bones:RigBone[]=[]):DeformableMesh{
+export function createGridMesh(width=100,height=100,gridX=20,gridY=16,bones:RigBone[]=[],weightOptions:AutoWeightOptions={}):DeformableMesh{
  const vertices:MeshVertex[]=[];
  for(let gy=0;gy<=gridY;gy++)for(let gx=0;gx<=gridX;gx++){
   const x=(gx/gridX)*width,y=(gy/gridY)*height;
-  vertices.push({x,y,weights:autoWeightsForBones({x,y},bones)});
+  vertices.push({x,y,weights:autoWeightsForBones({x,y},bones,weightOptions)});
  }
  return{vertices,width,height,gridX,gridY};
 }
