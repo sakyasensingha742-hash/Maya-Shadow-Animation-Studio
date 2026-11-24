@@ -32,8 +32,8 @@ export default function RigMapCanvas({image,onRigCreated}:Props){
  <section className="smart-bone-editor">
   <div className="smart-bone-heading"><div><span className="eyebrow">AUTOMATION / SECONDARY MOTION</span><h3>Smart Bone Drivers</h3></div><span className="map-status">{smartDrivers.length} drivers</span></div>
   <div className="smart-bone-form">
-   <label>Controller<select value={driverInput} onChange={e=>setDriverInput(e.target.value)}>{["root","spine","neck","head","upperArmL","lowerArmL","upperArmR","lowerArmR","upperLegL","lowerLegL","upperLegR","lowerLegR"].map(id=><option key={id} value={id}>{id}</option>)}</select></label>
-   <label>Driven Bone<select value={driverOutput} onChange={e=>setDriverOutput(e.target.value)}>{["spine","neck","head","upperArmL","lowerArmL","handL","upperArmR","lowerArmR","handR","upperLegL","lowerLegL","footL","upperLegR","lowerLegR","footR"].map(id=><option key={id} value={id}>{id}</option>)}</select></label>
+   <label>Controller<select value={driverInput} onChange={e=>setDriverInput(e.target.value)}>{["root","spine","neck","head","upperArmL","lowerArmL","handL","upperArmR","lowerArmR","handR","upperLegL","lowerLegL","footL","upperLegR","lowerLegR","footR"].map(id=><option key={id} value={id}>{id}</option>)}</select></label>
+   <label>Driven Bone<select value={driverOutput} onChange={e=>setDriverOutput(e.target.value)}>{["root","spine","neck","head","upperArmL","lowerArmL","handL","upperArmR","lowerArmR","handR","upperLegL","lowerLegL","footL","upperLegR","lowerLegR","footR"].map(id=><option key={id} value={id}>{id}</option>)}</select></label>
    <label>Input Start °<input type="number" value={driverStart} onChange={e=>setDriverStart(Number(e.target.value))}/></label>
    <label>Input End °<input type="number" value={driverEnd} onChange={e=>setDriverEnd(Number(e.target.value))}/></label>
    <label>Output Start °<input type="number" value={driverOutputStart} onChange={e=>setDriverOutputStart(Number(e.target.value))}/></label>
