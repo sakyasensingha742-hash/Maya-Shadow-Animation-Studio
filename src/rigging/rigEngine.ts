@@ -120,3 +120,61 @@ export function applyTwoBoneIK(
   };
 }
 
+
+/** A Smart Bone maps one controller's angular range to another bone's rotation offset. */
+export type SmartBoneDriver = {
+  id: string;
+  inputBoneId: string;
+  outputBoneId: string;
+  inputStart: number;
+  inputEnd: number;
+  outputStart: number;
+  outputEnd: number;
+  easing: 'linear' | 'smooth';
+  enabled: boolean;
+};
+
+export type RigPose = Record<string, number>;
+
+const normalizeAngle = (angle: number) => {
+  let value = angle;
+  while (value > Math.PI) value -= Math.PI * 2;
+  while (value < -Math.PI) value += Math.PI * 2;
+  return value;
+};
+
+/** Blend FK and IK rotations using shortest-path angular interpolation. */
+export function blendIKFKPoses(fk: RigPose, ik: RigPose, ikWeight: number): RigPose {
+  const weight = Math.max(0, Math.min(1, Number.isFinite(ikWeight) ? ikWeight : 0));
+  const ids = new Set([...Object.keys(fk), ...Object.keys(ik)]);
+  const result: RigPose = {};
+  ids.forEach(id => {
+    const from = fk[id] ?? ik[id] ?? 0;
+    const to = ik[id] ?? from;
+    result[id] = normalizeAngle(from + normalizeAngle(to - from) * weight);
+  });
+  return result;
+}
+
+/** Evaluate one Smart Bone driver as a rotation offset for its output bone. */
+export function evaluateSmartBoneDriver(driver: SmartBoneDriver, pose: RigPose): number {
+  if (!driver.enabled) return 0;
+  const input = pose[driver.inputBoneId] ?? 0;
+  const span = driver.inputEnd - driver.inputStart;
+  const raw = Math.abs(span) < 1e-8 ? (input >= driver.inputEnd ? 1 : 0)
+    : Math.max(0, Math.min(1, (input - driver.inputStart) / span));
+  const t = driver.easing === 'smooth' ? raw * raw * (3 - 2 * raw) : raw;
+  return driver.outputStart + (driver.outputEnd - driver.outputStart) * t;
+}
+
+/** Apply all enabled Smart Bone drivers; multiple drivers add their offsets. */
+export function applySmartBoneDrivers(pose: RigPose, drivers: SmartBoneDriver[]): RigPose {
+  const result = { ...pose };
+  for (const driver of drivers) {
+    if (!driver.enabled) continue;
+    result[driver.outputBoneId] = normalizeAngle(
+      (result[driver.outputBoneId] ?? 0) + evaluateSmartBoneDriver(driver, pose),
+    );
+  }
+  return result;
+}
