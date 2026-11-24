@@ -55,6 +55,13 @@ export function loadBoundRig():CharacterRig|null{
   return loadRig(loadCharacterBinding()?.rigId);
 }
 
+/** Persist edits to the currently bound character rig without changing its identity. */
+export function saveBoundRig(rig:CharacterRig):CharacterRig{
+  const binding=loadCharacterBinding();
+  if(binding?.rigId)saveRig(binding.rigId,rig);
+  return rig;
+}
+
 export function clearCharacterBinding(){
   const binding=loadCharacterBinding();
   try{
