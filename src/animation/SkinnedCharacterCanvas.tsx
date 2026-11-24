@@ -1,5 +1,5 @@
 import React,{CSSProperties,useEffect,useMemo,useRef} from 'react';
-import {CharacterRig} from '../rigging/rigEngine';
+import {CharacterRig,applySmartBoneDrivers} from '../rigging/rigEngine';
 import {RigPose} from './poseTrack';
 import {createGridMesh,deformMesh} from './meshDeformer';
 
@@ -20,7 +20,7 @@ type Props={
 export default function SkinnedCharacterCanvas({image,rig,pose,className,style,onPointerDown,onPointerMove,onPointerUp,onPointerCancel}:Props){
  const canvasRef=useRef<HTMLCanvasElement|null>(null);
  const mesh=useMemo(()=>createGridMesh(100,100,20,16,rig.bones),[rig]);
- const rotations=useMemo(()=>Object.fromEntries(Object.entries(pose).map(([id,p])=>[id,p.rotation])),[pose]);
+ const rotations=useMemo(()=>applySmartBoneDrivers(Object.fromEntries(Object.entries(pose).map(([id,p])=>[id,p.rotation])),rig.smartBoneDrivers??[]),[pose,rig.smartBoneDrivers]);
  useEffect(()=>{
   const canvas=canvasRef.current;if(!canvas)return;
   let disposed=false;
