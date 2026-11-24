@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      - name: Motion interpolation regression tests
+        run: npm test
       - name: Validate Electron main-process syntax
         run: node --check electron/main.cjs && node --check electron/renderCapture.cjs && node --check electron/renderService.cjs
       - name: Feature contract QA
