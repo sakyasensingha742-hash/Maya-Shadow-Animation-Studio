@@ -27,8 +27,9 @@ export async function analyzeAudioLipSync(source:string,fps:number):Promise<Face
    const worker=new Worker(new URL('./audioLipSync.worker.ts',import.meta.url),{type:'module'});
    const finish=(action:()=>void)=>{worker.terminate();action()};
    worker.onmessage=(event:MessageEvent<WorkerResponse>)=>{
-    if(event.data.ok)finish(()=>resolve(event.data.keys));
-    else finish(()=>reject(new Error(event.data.error)));
+    const payload=event.data;
+    if('keys' in payload)finish(()=>resolve(payload.keys));
+    else finish(()=>reject(new Error(payload.error)));
    };
    worker.onerror=event=>finish(()=>reject(new Error(event.message||'Audio lip-sync worker failed.')));
    worker.postMessage({samples:mono.buffer as ArrayBuffer,sampleRate:decoded.sampleRate,fps},[mono.buffer as ArrayBuffer]);
