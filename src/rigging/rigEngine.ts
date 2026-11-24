@@ -19,6 +19,7 @@ export type CharacterRig = {
   version: 1;
   bones: RigBone[];
   facialControls: FacialControl[];
+  smartBoneDrivers?: SmartBoneDriver[];
   generatedAt: string;
 };
 
