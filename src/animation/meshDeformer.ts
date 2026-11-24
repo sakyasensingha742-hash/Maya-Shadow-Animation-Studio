@@ -6,15 +6,48 @@ export type DeformableMesh={vertices:MeshVertex[];width:number;height:number;gri
 const clamp=(v:number,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const rotate=(x:number,y:number,cx:number,cy:number,a:number)=>{const dx=x-cx,dy=y-cy,c=Math.cos(a),s=Math.sin(a);return{x:cx+dx*c-dy*s,y:cy+dx*s+dy*c};};
 
+type BoneSegment={bone:string;from:{x:number;y:number};to:{x:number;y:number}};
+
+/** Distance from a mesh point to the closest point on a bone segment. */
+export function distanceToBoneSegment(point:{x:number;y:number},from:{x:number;y:number},to:{x:number;y:number}):number{
+ const dx=to.x-from.x,dy=to.y-from.y;
+ const lengthSquared=dx*dx+dy*dy;
+ const t=lengthSquared>1e-10?clamp(((point.x-from.x)*dx+(point.y-from.y)*dy)/lengthSquared):0;
+ return Math.hypot(point.x-(from.x+dx*t),point.y-(from.y+dy*t));
+}
+
+/**
+ * Segment-aware automatic skin weights adapted from Rigby2D meshgeom autoWeights.
+ * Inverse fourth-power distance makes the nearest bone segment dominate, while
+ * retaining up to four normalized influences per vertex.
+ * Upstream: https://github.com/jaisurya-dev-art/rigby2d
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+export function autoWeightsForBones(point:{x:number;y:number},bones:RigBone[],maxInfluences=4):Record<string,number>{
+ const byId=new Map(bones.map(b=>[b.id,b]));
+ const segments:BoneSegment[]=bones.map(b=>{
+  const parent=b.parentId?byId.get(b.parentId):undefined;
+  const from=parent?{x:parent.x,y:parent.y}:{x:b.x,y:b.y};
+  return{bone:b.id,from,to:{x:b.x,y:b.y}};
+ });
+ const raw=segments.map(segment=>({id:segment.bone,weight:1/Math.pow(distanceToBoneSegment(point,segment.from,segment.to)+1,4)}));
+ const total=raw.reduce((sum,influence)=>sum+influence.weight,0);
+ if(total<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
+ const ranked=raw.map(influence=>({...influence,weight:influence.weight/total}))
+  .filter(influence=>influence.weight>1e-3)
+  .sort((a,b)=>b.weight-a.weight)
+  .slice(0,Math.max(1,maxInfluences));
+ const keptTotal=ranked.reduce((sum,influence)=>sum+influence.weight,0);
+ if(keptTotal<=1e-12)return bones[0]?{[bones[0].id]:1}:{};
+ return Object.fromEntries(ranked.map(influence=>[influence.id,influence.weight/keptTotal]));
+}
+
 /** Creates a normalized 0–100 character mesh so it matches the rig-map coordinate system. */
 export function createGridMesh(width=100,height=100,gridX=20,gridY=16,bones:RigBone[]=[]):DeformableMesh{
  const vertices:MeshVertex[]=[];
  for(let gy=0;gy<=gridY;gy++)for(let gx=0;gx<=gridX;gx++){
   const x=(gx/gridX)*width,y=(gy/gridY)*height;
-  const nearest=[...bones].sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y)).slice(0,4);
-  const raw=nearest.map(b=>({id:b.id,w:1/Math.max(.75,Math.hypot(x-b.x,y-b.y))}));
-  const sum=raw.reduce((n,v)=>n+v.w,0)||1;
-  vertices.push({x,y,weights:Object.fromEntries(raw.map(v=>[v.id,v.w/sum]))});
+  vertices.push({x,y,weights:autoWeightsForBones({x,y},bones)});
  }
  return{vertices,width,height,gridX,gridY};
 }

@@ -47,10 +47,24 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 | Project | Relevant capabilities | License / decision |
 |---|---|---|
 | [Papagayo-NG](https://github.com/morevnaproject-org/papagayo-ng) | Phoneme alignment against recorded speech waveform | Verify repository license and dependencies before reuse; reference for manual phoneme timing. |
-| [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) | Automatic mouth-cue extraction from audio | MIT; candidate for offline lip-sync integration, pending Windows binary/package verification. |
+| [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) | Automatic mouth-cue extraction from audio | MIT; cue-file interoperability implemented for JSON/XML/TSV. The recognizer executable is not bundled. |
 | [FFmpeg](https://github.com/FFmpeg/FFmpeg) | Audio/video decode, encode, mux, filters and export | LGPL/GPL build configuration varies; current app already uses ffmpeg-static. Verify the exact binary build configuration and notices. |
 
 ## Code integrated in this update
+
+### Rigby2D segment-aware automatic skin weights
+
+- Updated `src/animation/meshDeformer.ts` with segment-distance weighting adapted from `Rigby2D/src/core/meshgeom.js`.
+- Each mesh vertex is weighted by inverse fourth-power distance to each bone segment (from parent endpoint to child endpoint), then pruned to up to four influences and normalized.
+- The existing brush painting, smoothing and CPU deformation preview continue using the same `Record<string, number>` weight representation.
+- Added the upstream attribution and MIT notice to `THIRD_PARTY_NOTICES.md`.
+- This is automatic skin-weight generation for the existing regular grid mesh; it is not Rigby2D's alpha-traced triangular mesh generation or its full PSD AutoRig.
+
+### Rhubarb Lip Sync cue-file interoperability
+
+- Added `src/animation/rhubarbLipSync.ts` for importing Rhubarb JSON, XML and TSV cue exports.
+- The Face Rig imports timed mouth cues as `mouthCue` and approximate `mouthOpen` keyframes; the original shape code is preserved.
+- No Rhubarb executable or audio recognizer is bundled; the feature imports cue files produced by that tool.
 
 ### OpenBone runtime adoption
 
@@ -66,10 +80,10 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 1. Build conformance tests for the Maya Shadow ↔ OpenBone coordinate/pose bridge (root, parent-child, left/right, rotated parent, zero-length bone, limits).
 2. Connect weighted mesh attachments and deformations to OpenBone runtime draw-list output; compare against the current CPU mesh preview.
 3. Add path constraints and deterministic physics secondary motion for hair, cloth and tails.
-4. Add lip-sync cue import/analysis (Rhubarb + Papagayo-style manual waveform alignment).
+4. Add audio-driven lip-sync analysis (OpenBone spectral algorithm or Rhubarb executable) and Papagayo-style manual phoneme alignment.
 5. Improve SVG path/shape tweening with a vetted MIT morphing library such as flubber.
 6. Use Graphite/OpenToonz/Tahoma2D research for non-destructive compositing and production pipeline design.
-7. Revisit Ankhimate, OSATURA, Rigby2D and LibreToon at the package/file level before any additional code import.
+7. Continue package/file-level review of Rigby2D AutoRig/alpha mesh generation, ag-psd layered PSD import, Ankhimate, OSATURA and LibreToon.
 
 ## Upstream references
 
