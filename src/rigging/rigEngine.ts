@@ -15,6 +15,8 @@ export type FacialControl = {
   value: number;
 };
 
+export type BoneConstraint = { boneId: string; minRotation: number; maxRotation: number; enabled: boolean };
+
 export type CharacterRig = {
   version: 1;
   bones: RigBone[];
@@ -22,6 +24,8 @@ export type CharacterRig = {
   smartBoneDrivers?: SmartBoneDriver[];
   /** Per-vertex normalized bone influences for the 21x17 deformation grid. */
   meshWeights?: Record<string, number>[];
+  /** Optional per-bone rotation limits, stored in radians. */
+  boneConstraints?: BoneConstraint[];
   generatedAt: string;
 };
 
@@ -138,6 +142,19 @@ export type SmartBoneDriver = {
 };
 
 export type RigPose = Record<string, number>;
+
+/** Clamp pose rotations to enabled per-bone limits (radians). */
+export function constrainRigPose(pose: RigPose, constraints: BoneConstraint[] = []): RigPose {
+  if (!constraints.length) return { ...pose };
+  const result = { ...pose };
+  for (const constraint of constraints) {
+    if (!constraint.enabled || !Number.isFinite(result[constraint.boneId])) continue;
+    const low = Math.min(constraint.minRotation, constraint.maxRotation);
+    const high = Math.max(constraint.minRotation, constraint.maxRotation);
+    result[constraint.boneId] = Math.max(low, Math.min(high, result[constraint.boneId]));
+  }
+  return result;
+}
 
 const normalizeAngle = (angle: number) => {
   let value = angle;
