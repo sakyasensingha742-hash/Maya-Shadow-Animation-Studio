@@ -22,7 +22,10 @@
     "react-dom": "latest",
     "lucide-react": "latest",
     "electron-updater": "4.6.5",
-    "ffmpeg-static": "latest"
+    "ffmpeg-static": "latest",
+    "@openbone/core": "^0.4.11",
+    "@openbone/runtime": "^0.4.11",
+    "@openbone/render-canvas": "^0.4.11"
   },
   "devDependencies": {
     "@types/react": "latest",
