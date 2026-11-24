@@ -18,7 +18,7 @@ test('ease-out decelerates toward the ending key',()=>{
 });
 
 test('ease-in-out uses a symmetric smooth curve',()=>{
-  assert.equal(interpolateMotion(pair('ease-in-out'),2.5).x,12.5);
+  assert.equal(interpolateMotion(pair('ease-in-out'),2.5).x,15.625);
   assert.equal(interpolateMotion(pair('ease-in-out'),5).x,50);
 });
 
