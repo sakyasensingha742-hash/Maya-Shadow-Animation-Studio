@@ -37,22 +37,22 @@ export async function importLayeredPsd(file:File):Promise<ImportedPsdDocument>{
  if(parsed.colorMode!==3)throw new Error('This importer currently supports RGB PSD documents only. Convert CMYK, Grayscale or Indexed artwork to RGB first.');
  if(!parsed.width||!parsed.height||parsed.width>30000||parsed.height>30000)throw new Error('The PSD canvas dimensions are invalid or too large.');
  const layers:ImportedPsdLayer[]=[];const groups:ImportedPsdGroup[]=[];
- const walk=(children:Layer[],path:string[],parentVisible:boolean,parentOpacity:number):void=>{
+ const walk=(children:Layer[],path:string[],parentOpacity:number):void=>{
   for(const layer of children){
    const name=(layer.name||'Untitled Layer').trim()||'Untitled Layer';
    const localOpacity=clamp01((layer.opacity??255)/255);
-   const visible=parentVisible&&!Boolean(layer.hidden);
+   const visible=!Boolean(layer.hidden);
    if(layer.children){
     const groupPath=[...path,name];
     groups.push({name,path:groupPath,visible});
-    walk(layer.children,groupPath,visible,parentOpacity*localOpacity);
+    walk(layer.children,groupPath,parentOpacity*localOpacity);
     continue;
    }
    const bitmap=layerSource(layer);if(!bitmap)continue;
    layers.push({name,groupPath:[...path],source:bitmap.source,left:layer.left??0,top:layer.top??0,width:bitmap.width,height:bitmap.height,visible,opacity:Math.round(parentOpacity*localOpacity*100),blendMode:blendModeOf(layer.blendMode)});
   }
  };
- walk(parsed.children||[],[],true,1);
+ walk(parsed.children||[],[],1);
  if(!layers.length)throw new Error('No pixel artwork layers were found. The PSD may contain only vector/text/effect layers or unsupported data.');
  return{width:parsed.width,height:parsed.height,layers,groups};
 }
