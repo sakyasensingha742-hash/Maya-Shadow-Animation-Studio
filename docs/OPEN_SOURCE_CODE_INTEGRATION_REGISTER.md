@@ -84,6 +84,13 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 - Fixed `SkinnedCharacterCanvas` to load saved `rig.meshWeights`; previously the weight-paint editor saved weights but the primary animation-stage skinning path regenerated default weights and ignored those saved values.
 - This is a targeted algorithm adaptation, not a port of the Bone-2D editor or its Spine-compatible runtime.
 
+### Layered PSD import using ag-psd
+
+- Added MIT-licensed `ag-psd@^34.2.3` and `src/importers/psdImporter.ts`.
+- Initial import supports 8-bit RGB PSDs with separate visible/hidden pixel layers, folder hierarchy, offsets, opacity and common blend modes. Layers become independent timeline image tracks with canvas-relative placement.
+- It does not yet recreate Photoshop masks, adjustment layers, layer effects, smart-object rendering or non-pass-through group compositing; vector/text-only layers without pixel raster data are skipped.
+- PSD layers are independently selectable and can be moved/animated as image tracks. This is not yet a full character-part slot/attachment binder or one-click AutoRig.
+
 ## Next implementation order
 
 1. Build conformance tests for the Maya Shadow ↔ OpenBone coordinate/pose bridge (root, parent-child, left/right, rotated parent, zero-length bone, limits).
@@ -103,4 +110,5 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 - Rigby2D license and third-party notices: https://github.com/jaisurya-dev-art/rigby2d
 - Bone-2D MIT source and architecture: https://github.com/iamgatz/Bone-2D
 - Bone-2D mesh and auto-weight implementation: https://github.com/iamgatz/Bone-2D/blob/main/src/core/mesh.ts
+- ag-psd PSD reader and package API: https://github.com/Agamnentzar/ag-psd
 - Graphite license: https://github.com/GraphiteEditor/Graphite
