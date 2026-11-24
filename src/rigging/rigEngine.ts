@@ -20,6 +20,8 @@ export type CharacterRig = {
   bones: RigBone[];
   facialControls: FacialControl[];
   smartBoneDrivers?: SmartBoneDriver[];
+  /** Per-vertex normalized bone influences for the 21x17 deformation grid. */
+  meshWeights?: Record<string, number>[];
   generatedAt: string;
 };
 
