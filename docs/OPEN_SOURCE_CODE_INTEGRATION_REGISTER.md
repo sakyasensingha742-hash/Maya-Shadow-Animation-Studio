@@ -74,13 +74,14 @@ This register records public repositories and codebases reviewed for MAYA SHADOW
 - Added `src/animation/openBoneBridge.ts`, converting Maya Shadow's Y-down/radian rig representation to OpenBone's Y-up/degree document model and applying poses to the OpenBone runtime.
 - Updated `src/animation/bonePose.ts` so world-space character pose evaluation uses OpenBone's runtime bone transforms, while preserving the existing PosedBone interface for the app.
 - The bridge currently handles rig hierarchy and transforms. It does not yet convert Maya Shadow mesh weights, image attachments, Smart Bone drivers or bone constraints into OpenBone documents. Those are explicit next integration tasks.
+- Uses the OpenBone Core `lipSync` spectral/loudness routine in a dedicated Web Worker to analyse locally imported audio and create six-shape Face track cues. This is approximate audio-driven mouth motion, not phoneme recognition.
 
 ## Next implementation order
 
 1. Build conformance tests for the Maya Shadow ↔ OpenBone coordinate/pose bridge (root, parent-child, left/right, rotated parent, zero-length bone, limits).
 2. Connect weighted mesh attachments and deformations to OpenBone runtime draw-list output; compare against the current CPU mesh preview.
 3. Add path constraints and deterministic physics secondary motion for hair, cloth and tails.
-4. Add audio-driven lip-sync analysis (OpenBone spectral algorithm or Rhubarb executable) and Papagayo-style manual phoneme alignment.
+4. Add phoneme-aware lip-sync (Rhubarb executable / Papagayo-style alignment) and character-specific viseme attachment mapping; OpenBone six-shape spectral analysis and Rhubarb cue-file import are now available.
 5. Improve SVG path/shape tweening with a vetted MIT morphing library such as flubber.
 6. Use Graphite/OpenToonz/Tahoma2D research for non-destructive compositing and production pipeline design.
 7. Continue package/file-level review of Rigby2D AutoRig/alpha mesh generation, ag-psd layered PSD import, Ankhimate, OSATURA and LibreToon.
