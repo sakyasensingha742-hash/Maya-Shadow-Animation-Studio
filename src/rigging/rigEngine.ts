@@ -198,3 +198,82 @@ export function applySmartBoneDrivers(pose: RigPose, drivers: SmartBoneDriver[])
   }
   return result;
 }
+
+
+export type FABRIKResult = { joints: IKPoint[]; reachable: boolean; iterations: number; error: number };
+
+/**
+ * FABRIK solver for a chain with any number of segments.
+ * Input joints describe the current pose; segment lengths are preserved.
+ * Returns a fresh joint array and never mutates the caller's points.
+ */
+export function solveFABRIK(
+  joints: IKPoint[],
+  target: IKPoint,
+  options: { iterations?: number; tolerance?: number } = {},
+): FABRIKResult {
+  const points = joints.map(p => ({ x: p.x, y: p.y }));
+  const segmentCount = points.length - 1;
+  if (segmentCount < 1) {
+    const error = points[0] ? Math.hypot(points[0].x - target.x, points[0].y - target.y) : Infinity;
+    return { joints: points, reachable: false, iterations: 0, error };
+  }
+  const lengths = points.slice(0, -1).map((p, i) =>
+    Math.hypot(points[i + 1].x - p.x, points[i + 1].y - p.y),
+  );
+  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+  const root = { ...points[0] };
+  const tolerance = Math.max(1e-5, options.tolerance ?? 0.25);
+  const maxIterations = Math.max(1, Math.min(256, Math.floor(options.iterations ?? 32)));
+  const distance = (a: IKPoint, b: IKPoint) => Math.hypot(b.x - a.x, b.y - a.y);
+  const direction = (from: IKPoint, to: IKPoint): IKPoint => {
+    const d = distance(from, to);
+    return d > 1e-8 ? { x: (to.x - from.x) / d, y: (to.y - from.y) / d } : { x: 1, y: 0 };
+  };
+  const reachable = distance(root, target) <= totalLength + tolerance;
+  if (!reachable) {
+    const dir = direction(root, target);
+    let cursor = root;
+    points[0] = root;
+    for (let i = 0; i < segmentCount; i++) {
+      cursor = { x: cursor.x + dir.x * lengths[i], y: cursor.y + dir.y * lengths[i] };
+      points[i + 1] = cursor;
+    }
+    const error = distance(points[segmentCount], target);
+    return { joints: points, reachable, iterations: 1, error };
+  }
+  let error = distance(points[segmentCount], target);
+  let used = 0;
+  for (let pass = 0; pass < maxIterations && error > tolerance; pass++) {
+    points[segmentCount] = { ...target };
+    for (let i = segmentCount - 1; i >= 0; i--) {
+      const dir = direction(points[i + 1], points[i]);
+      points[i] = {
+        x: points[i + 1].x + dir.x * lengths[i],
+        y: points[i + 1].y + dir.y * lengths[i],
+      };
+    }
+    points[0] = root;
+    for (let i = 0; i < segmentCount; i++) {
+      const dir = direction(points[i], points[i + 1]);
+      points[i + 1] = {
+        x: points[i].x + dir.x * lengths[i],
+        y: points[i].y + dir.y * lengths[i],
+      };
+    }
+    error = distance(points[segmentCount], target);
+    used = pass + 1;
+  }
+  return { joints: points, reachable, iterations: used, error };
+}
+
+/** Soft-IK remapping: eases toward full chain reach to reduce sudden knee/elbow popping. */
+export function softIKDistance(distance: number, reach: number, softness = 0): number {
+  const safeReach = Math.max(0, reach);
+  const safeDistance = Math.max(0, distance);
+  const soft = Math.max(0, Math.min(0.9, softness));
+  const zone = safeReach * soft;
+  if (zone <= 1e-8 || safeDistance <= safeReach - zone) return Math.min(safeDistance, safeReach);
+  const x = safeDistance - (safeReach - zone);
+  return (safeReach - zone) + zone * (1 - Math.exp(-x / zone));
+}
