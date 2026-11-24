@@ -1,4 +1,9 @@
 import {FaceAnimationValues,defaultFaceAnimation,clampFace} from '../rigging/faceAnimationModel';
+export function mouthCueAtFrame(keyframes:Array<{frame:number;property:string;value:unknown}>,frame:number):string|null{
+ const keys=keyframes.filter(k=>k.property==='mouthCue'&&typeof k.value==='string'&&/^[A-HX]$/.test(k.value)).sort((a,b)=>a.frame-b.frame);
+ const active=[...keys].reverse().find(k=>k.frame<=frame);
+ return active?String(active.value):null;
+}
 export function faceValuesAtFrame(keyframes:Array<{frame:number;property:string;value:unknown}>,frame:number):FaceAnimationValues{
  const out={...defaultFaceAnimation};
  (Object.keys(out) as Array<keyof FaceAnimationValues>).forEach(property=>{
